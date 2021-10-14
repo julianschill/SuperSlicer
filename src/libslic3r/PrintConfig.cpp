@@ -6607,11 +6607,6 @@ std::string FullPrintConfig::validate()
         if (em <= 0)
             return "Invalid value for --extrusion-multiplier";
 
-    // --default-acceleration
-    if ((this->perimeter_acceleration.value != 0. || this->external_perimeter_acceleration.value != 0. || this->infill_acceleration.value != 0. || this->bridge_acceleration.value != 0. || this->first_layer_acceleration.value != 0. || this->top_solid_infill_acceleration.value != 0.) &&
-        this->default_acceleration.value == 0.)
-        return "Invalid zero value for --default-acceleration when using other acceleration settings";
-
     // --spiral-vase
     if (this->spiral_vase) {
         // Note that we might want to have more than one perimeter on the bottom

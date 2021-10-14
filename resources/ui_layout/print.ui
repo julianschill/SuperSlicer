@@ -270,9 +270,11 @@ group:sidetext_width$7:Modifiers
 group:Acceleration control (advanced)
 	setting:default_acceleration
 	setting:perimeter_acceleration
+	setting:external_perimeter_acceleration
 	setting:infill_acceleration
 	setting:bridge_acceleration
 	setting:first_layer_acceleration
+	setting:top_solid_infill_acceleration
 	setting:travel_acceleration
 group:Autospeed (advanced)
 	setting:label$Volumetric speed for Autospeed:max_volumetric_speed

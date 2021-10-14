@@ -964,6 +964,19 @@ void PrintConfigDef::init_fff_params()
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionPercent(0));
 
+    def = this->add("external_perimeter_acceleration", coFloatOrPercent);
+    def->label = L("External Perimeters");
+    def->full_label = L("External Perimeter acceleration");
+    def->category = OptionCategory::speed;
+    def->tooltip = L("This is the acceleration your printer will use for external perimeters. "
+                "\nCan be a % of the internal perimeter acceleration"
+                "\nSet zero to disable acceleration control for external perimeters.");
+    def->sidetext = L("mm/s² or %");
+    def->ratio_over = "perimeter_acceleration";
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionFloatOrPercent(0,false));
+
     def = this->add("external_perimeter_speed", coFloatOrPercent);
     def->label = L("External");
     def->full_label = L("External perimeters speed");
@@ -3056,12 +3069,12 @@ void PrintConfigDef::init_fff_params()
     def->set_default_value(new ConfigOptionFloat(-2.f));
 
     def = this->add("perimeter_acceleration", coFloatOrPercent);
-    def->label = L("Perimeters");
-    def->full_label = L("Perimeter acceleration");
+    def->label = L("Internal Perimeters");
+    def->full_label = L("Internal Perimeter acceleration");
     def->category = OptionCategory::speed;
-    def->tooltip = L("This is the acceleration your printer will use for perimeters. "
+    def->tooltip = L("This is the acceleration your printer will use for internal perimeters. "
                 "\nCan be a % of the default acceleration"
-                "\nSet zero to disable acceleration control for perimeters.");
+                "\nSet zero to disable acceleration control for internal perimeters.");
     def->sidetext = L("mm/s² or %");
     def->ratio_over = "default_acceleration";
     def->min = 0;
@@ -4289,6 +4302,19 @@ void PrintConfigDef::init_fff_params()
     def->can_phony = true;
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloatOrPercent(0, false, true));
+
+    def = this->add("top_solid_infill_acceleration", coFloatOrPercent);
+    def->label = L("Top solid ");
+    def->full_label = L("Top solid acceleration");
+    def->category = OptionCategory::speed;
+    def->tooltip = L("This is the acceleration your printer will use for top solid infills. "
+                "\nCan be a % of the default acceleration"
+                "\nSet zero to disable acceleration control for top solid infill accelerations.");
+    def->sidetext = L("mm/s² or %");
+    def->ratio_over = "default_acceleration";
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionFloatOrPercent(0,false));
 
     def = this->add("top_solid_infill_speed", coFloatOrPercent);
     def->label = L("Top solid");
@@ -5865,7 +5891,7 @@ void PrintConfigDef::to_prusa(t_config_option_key& opt_key, std::string& value, 
         }
     } else if ("elephant_foot_min_width" == opt_key) {
         opt_key = "elefant_foot_min_width";
-    } else if("first_layer_acceleration" == opt_key || "infill_acceleration" == opt_key || "bridge_acceleration" == opt_key || "default_acceleration" == opt_key || "perimeter_acceleration" == opt_key
+    } else if("first_layer_acceleration" == opt_key || "top_solid_infill_acceleration" == opt_key || "infill_acceleration" == opt_key || "bridge_acceleration" == opt_key || "default_acceleration" == opt_key || "perimeter_acceleration" == opt_key || "external_perimeter_acceleration" == opt_key
         || "overhangs_speed" == opt_key || "ironing_speed" == opt_key){
         // remove '%'
         if (value.find("%") != std::string::npos) {
@@ -6582,7 +6608,7 @@ std::string FullPrintConfig::validate()
             return "Invalid value for --extrusion-multiplier";
 
     // --default-acceleration
-    if ((this->perimeter_acceleration.value != 0. || this->infill_acceleration.value != 0. || this->bridge_acceleration.value != 0. || this->first_layer_acceleration.value != 0.) &&
+    if ((this->perimeter_acceleration.value != 0. || this->external_perimeter_acceleration.value != 0. || this->infill_acceleration.value != 0. || this->bridge_acceleration.value != 0. || this->first_layer_acceleration.value != 0. || this->top_solid_infill_acceleration.value != 0.) &&
         this->default_acceleration.value == 0.)
         return "Invalid zero value for --default-acceleration when using other acceleration settings";
 

@@ -526,7 +526,9 @@ const std::vector<std::string>& Preset::print_options()
         "default_acceleration",
         "first_layer_acceleration",
         "infill_acceleration",
+        "top_solid_infill_acceleration",
         "perimeter_acceleration",
+        "external_perimeter_acceleration",
         "travel_acceleration",
         // skirt
         "skirts",

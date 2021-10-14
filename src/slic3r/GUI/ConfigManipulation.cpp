@@ -434,8 +434,8 @@ void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig* config)
         toggle_field(el, config->opt_bool("hole_to_polyhole"));
 
     bool have_default_acceleration = config->option<ConfigOptionFloatOrPercent>("default_acceleration")->value > 0;
-    for (auto el : { "perimeter_acceleration", "infill_acceleration",
-                    "bridge_acceleration", "first_layer_acceleration", "travel_acceleration" })
+    for (auto el : { "perimeter_acceleration", "external_perimeter_acceleration", "infill_acceleration",
+                    "bridge_acceleration", "first_layer_acceleration", "top_solid_infill_acceleration", "travel_acceleration" })
         toggle_field(el, have_default_acceleration);
 
     bool have_skirt = config->opt_int("skirts") > 0;

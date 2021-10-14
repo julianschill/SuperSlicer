@@ -149,9 +149,11 @@ group:Modifiers
 	setting:full_label:first_layer_infill_speed
 group:Acceleration control (advanced)
 	setting:perimeter_acceleration
+	setting:external_perimeter_acceleration
 	setting:infill_acceleration
 	setting:bridge_acceleration
 	setting:first_layer_acceleration
+	setting:top_solid_infill_acceleration
 	setting:default_acceleration
 group:Autospeed (advanced)
 	setting:max_print_speed

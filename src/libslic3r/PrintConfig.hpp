@@ -1298,6 +1298,7 @@ public:
     ConfigOptionFloatOrPercent      default_acceleration;
     ConfigOptionInts                disable_fan_first_layers;
     ConfigOptionFloat               duplicate_distance;
+    ConfigOptionFloatOrPercent      external_perimeter_acceleration;
     ConfigOptionInts                external_perimeter_fan_speed;
     ConfigOptionFloat               extruder_clearance_height;
     ConfigOptionFloat               extruder_clearance_radius;
@@ -1362,6 +1363,7 @@ public:
     ConfigOptionBool                thumbnails_with_bed;
     ConfigOptionPercent             time_estimation_compensation;
     ConfigOptionInts                top_fan_speed;
+    ConfigOptionFloatOrPercent      top_solid_infill_acceleration;
     ConfigOptionFloatOrPercent      travel_acceleration;
     ConfigOptionBools               wipe;
     ConfigOptionBool                wipe_tower;
@@ -1401,6 +1403,7 @@ protected:
         OPT_PTR(default_acceleration);
         OPT_PTR(disable_fan_first_layers);
         OPT_PTR(duplicate_distance);
+        OPT_PTR(external_perimeter_acceleration);
         OPT_PTR(external_perimeter_fan_speed);
         OPT_PTR(extruder_clearance_height);
         OPT_PTR(extruder_clearance_radius);
@@ -1465,6 +1468,7 @@ protected:
         OPT_PTR(thumbnails_with_bed);
         OPT_PTR(time_estimation_compensation);
         OPT_PTR(top_fan_speed);
+        OPT_PTR(top_solid_infill_acceleration);
         OPT_PTR(travel_acceleration);
         OPT_PTR(wipe);
         OPT_PTR(wipe_tower);

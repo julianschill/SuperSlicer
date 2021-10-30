@@ -303,13 +303,12 @@ void PrintConfigDef::init_fff_params()
     def->set_default_value(new ConfigOptionFloat(0.));
 
     def = this->add("bridge_acceleration", coFloatOrPercent);
-    def->label = L("Bridge");
+    def->label = L("Bridges");
     def->full_label = L("Bridge acceleration");
     def->category = OptionCategory::speed;
     def->tooltip = L("This is the acceleration your printer will use for bridges."
                 "\nCan be a % of the default acceleration"
-                "\nSet zero to disable acceleration control for bridges."
-                "\nNote that it won't be applied to overhangs, they still use the perimeter acceleration.");
+                "\nSet zero to disable acceleration control for bridges.");
     def->sidetext = L("mm/s² or %");
     def->ratio_over = "default_acceleration";
     def->min = 0;
@@ -965,7 +964,7 @@ void PrintConfigDef::init_fff_params()
     def->set_default_value(new ConfigOptionPercent(0));
 
     def = this->add("external_perimeter_acceleration", coFloatOrPercent);
-    def->label = L("External Perimeters");
+    def->label = L("External");
     def->full_label = L("External Perimeter acceleration");
     def->category = OptionCategory::speed;
     def->tooltip = L("This is the acceleration your printer will use for external perimeters. "
@@ -2153,7 +2152,7 @@ void PrintConfigDef::init_fff_params()
     def->set_default_value(new ConfigOptionBool(0));
 
     def = this->add("infill_acceleration", coFloatOrPercent);
-    def->label = L("Infill");
+    def->label = L("Sparse");
     def->full_label = L("Infill acceleration");
     def->category = OptionCategory::speed;
     def->tooltip = L("This is the acceleration your printer will use for infill."
@@ -2972,6 +2971,19 @@ void PrintConfigDef::init_fff_params()
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionString("[input_filename_base].gcode"));
 
+    def = this->add("overhangs_acceleration", coFloatOrPercent);
+    def->label = L("Overhangs");
+    def->full_label = L("Overhang acceleration");
+    def->category = OptionCategory::speed;
+    def->tooltip = L("This is the acceleration your printer will use for overhangs."
+                "\nCan be a % of the default acceleration"
+                "\nSet zero to disable acceleration control for overhangs.");
+    def->sidetext = L("mm/s² or %");
+    def->ratio_over = "default_acceleration";
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionFloatOrPercent(0,false));
+
     def = this->add("overhangs_speed", coFloatOrPercent);
     def->label = L("Overhangs");
     def->full_label = L("Overhangs speed");
@@ -3069,7 +3081,7 @@ void PrintConfigDef::init_fff_params()
     def->set_default_value(new ConfigOptionFloat(-2.f));
 
     def = this->add("perimeter_acceleration", coFloatOrPercent);
-    def->label = L("Internal Perimeters");
+    def->label = L("Internal");
     def->full_label = L("Internal Perimeter acceleration");
     def->category = OptionCategory::speed;
     def->tooltip = L("This is the acceleration your printer will use for internal perimeters. "
@@ -3860,6 +3872,19 @@ void PrintConfigDef::init_fff_params()
                      "User is responsible for ensuring there is no collision with the print.");
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionBool(false));
+    
+    def = this->add("solid_infill_acceleration", coFloatOrPercent);
+    def->label = L("Solid ");
+    def->full_label = L("Solid acceleration");
+    def->category = OptionCategory::speed;
+    def->tooltip = L("This is the acceleration your printer will use for solid infills. "
+                "\nCan be a % of the default acceleration"
+                "\nSet zero to disable acceleration control for solid infill accelerations.");
+    def->sidetext = L("mm/s² or %");
+    def->ratio_over = "default_acceleration";
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionFloatOrPercent(0,false));
 
     def = this->add("solid_over_perimeters", coInt);
     def->label = L("No solid infill over");
@@ -5894,7 +5919,7 @@ void PrintConfigDef::to_prusa(t_config_option_key& opt_key, std::string& value, 
         }
     } else if ("elephant_foot_min_width" == opt_key) {
         opt_key = "elefant_foot_min_width";
-    } else if("first_layer_acceleration" == opt_key || "top_solid_infill_acceleration" == opt_key || "infill_acceleration" == opt_key || "bridge_acceleration" == opt_key || "default_acceleration" == opt_key || "perimeter_acceleration" == opt_key || "external_perimeter_acceleration" == opt_key
+    } else if("first_layer_acceleration" == opt_key || "solid_infill_acceleration" == opt_key || "top_solid_infill_acceleration" == opt_key || "infill_acceleration" == opt_key || "bridge_acceleration" == opt_key || "overhangs_acceleration" == opt_key || "default_acceleration" == opt_key || "perimeter_acceleration" == opt_key || "external_perimeter_acceleration" == opt_key
         || "overhangs_speed" == opt_key || "ironing_speed" == opt_key){
         // remove '%'
         if (value.find("%") != std::string::npos) {

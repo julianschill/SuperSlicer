@@ -849,6 +849,7 @@ public:
     ConfigOptionFloatOrPercent      small_perimeter_min_length;
     ConfigOptionFloatOrPercent      small_perimeter_max_length;
     ConfigOptionEnum<InfillPattern> solid_fill_pattern;
+    ConfigOptionFloatOrPercent      solid_infill_acceleration;
     ConfigOptionFloat               solid_infill_below_area;
     ConfigOptionInt                 solid_infill_extruder;
     ConfigOptionFloatOrPercent      solid_infill_extrusion_width;
@@ -963,6 +964,7 @@ protected:
         OPT_PTR(small_perimeter_min_length);
         OPT_PTR(small_perimeter_max_length);
         OPT_PTR(solid_fill_pattern);
+        OPT_PTR(solid_infill_acceleration);
         OPT_PTR(solid_infill_below_area);
         OPT_PTR(solid_infill_extruder);
         OPT_PTR(solid_infill_extrusion_width);
@@ -1337,6 +1339,7 @@ public:
     ConfigOptionBool                only_retract_when_crossing_perimeters;
     ConfigOptionBool                ooze_prevention;
     ConfigOptionString              output_filename_format;
+    ConfigOptionFloatOrPercent      overhangs_acceleration;
     ConfigOptionFloatOrPercent      perimeter_acceleration;
     ConfigOptionStrings             post_process;
     ConfigOptionString              printer_model;
@@ -1442,6 +1445,7 @@ protected:
         OPT_PTR(only_retract_when_crossing_perimeters);
         OPT_PTR(ooze_prevention);
         OPT_PTR(output_filename_format);
+        OPT_PTR(overhangs_acceleration);
         OPT_PTR(perimeter_acceleration);
         OPT_PTR(post_process);
         OPT_PTR(printer_model);

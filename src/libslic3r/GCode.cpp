@@ -3877,6 +3877,10 @@ std::string GCode::_before_extrude(const ExtrusionPath &path, const std::string 
         } else if (m_config.bridge_acceleration.value > 0 && is_bridge(path.role())
             && path.role() != erOverhangPerimeter) {
             acceleration = m_config.bridge_acceleration.get_abs_value(acceleration);
+        } else if (m_config.overhangs_acceleration.value > 0 && path.role() == erOverhangPerimeter) {
+            acceleration = m_config.overhangs_acceleration.get_abs_value(acceleration);
+        } else if (m_config.solid_infill_acceleration.value > 0 && path.role() == erSolidInfill) {
+            acceleration = m_config.solid_infill_acceleration.get_abs_value(acceleration);
         } else if (m_config.top_solid_infill_acceleration.value > 0 && path.role() == erTopSolidInfill) {
             acceleration = m_config.top_solid_infill_acceleration.get_abs_value(acceleration);
         } else if (m_config.infill_acceleration.value > 0 && is_infill(path.role())) {

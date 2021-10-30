@@ -267,13 +267,25 @@ group:sidetext_width$7:Modifiers
 		setting:label_width$8:width$4:small_perimeter_min_length
 		setting:label_width$8:width$4:small_perimeter_max_length
 		setting:label_width$8:width$4:small_perimeter_speed
-group:Acceleration control (advanced)
-	setting:default_acceleration
-	setting:perimeter_acceleration
-	setting:infill_acceleration
-	setting:bridge_acceleration
-	setting:first_layer_acceleration
-	setting:travel_acceleration
+group:label_width$8:sidetext_width$7:Acceleration control (advanced)
+	line:Default acceleration
+		setting:width$4:default_acceleration
+		setting:width$4:first_layer_acceleration
+		setting:width$4:travel_acceleration
+	line:Perimeter acceleration
+		setting:width$4:perimeter_acceleration
+		setting:width$4:external_perimeter_acceleration
+	end_line
+	line:Infill acceleration
+		setting:width$4:infill_acceleration
+		setting:width$4:solid_infill_acceleration
+		setting:width$4:top_solid_infill_acceleration
+	end_line
+	line:Bridge acceleration
+		setting:width$4:bridge_acceleration
+		setting:width$4:overhangs_acceleration
+	end_line
+
 group:Autospeed (advanced)
 	setting:label$Volumetric speed for Autospeed:max_volumetric_speed
 	setting:max_print_speed

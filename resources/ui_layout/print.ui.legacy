@@ -148,11 +148,15 @@ group:Modifiers
 	setting:full_label:first_layer_speed
 	setting:full_label:first_layer_infill_speed
 group:Acceleration control (advanced)
+	setting:default_acceleration
+	setting:first_layer_acceleration
 	setting:perimeter_acceleration
+	setting:external_perimeter_acceleration
+	setting:solid_infill_acceleration
+	setting:top_solid_infill_acceleration
 	setting:infill_acceleration
 	setting:bridge_acceleration
-	setting:first_layer_acceleration
-	setting:default_acceleration
+	setting:overhangs_acceleration
 group:Autospeed (advanced)
 	setting:max_print_speed
 	setting:max_volumetric_speed

@@ -400,7 +400,7 @@ void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig* config)
         toggle_field(el, have_infill_dense);
 
     bool has_spiral_vase         = have_perimeters && config->opt_bool("spiral_vase");
-    bool has_top_solid_infill 	 = config->opt_int("top_solid_layers") > 0;
+    bool has_top_solid_infill 	 = config->opt_int("top_solid_layers") > 0 || has_spiral_vase;
     bool has_bottom_solid_infill = config->opt_int("bottom_solid_layers") > 0;
     bool has_solid_infill 		 = has_top_solid_infill || has_bottom_solid_infill || (have_infill && (config->opt_int("solid_infill_every_layers") > 0 || config->opt_float("solid_infill_below_area") > 0));
     // solid_infill_extruder uses the same logic as in Print::extruders()
@@ -434,8 +434,9 @@ void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig* config)
         toggle_field(el, config->opt_bool("hole_to_polyhole"));
 
     bool have_default_acceleration = config->option<ConfigOptionFloatOrPercent>("default_acceleration")->value > 0;
-    for (auto el : { "perimeter_acceleration", "infill_acceleration",
-                    "bridge_acceleration", "first_layer_acceleration", "travel_acceleration" })
+    for (auto el : { "perimeter_acceleration", "external_perimeter_acceleration", "infill_acceleration",
+                    "bridge_acceleration", "overhangs_acceleration", "first_layer_acceleration", "solid_infill_acceleration", 
+                    "top_solid_infill_acceleration", "travel_acceleration" })
         toggle_field(el, have_default_acceleration);
 
     bool have_skirt = config->opt_int("skirts") > 0;

@@ -3870,11 +3870,19 @@ std::string GCode::_before_extrude(const ExtrusionPath &path, const std::string 
     if(acceleration > 0){
         if (this->on_first_layer() && m_config.first_layer_acceleration.value > 0) {
             acceleration = m_config.first_layer_acceleration.get_abs_value(acceleration);
+        } else if (m_config.external_perimeter_acceleration.value > 0 && is_external_perimeter(path.role())) {
+            acceleration = m_config.external_perimeter_acceleration.get_abs_value(acceleration);
         } else if (m_config.perimeter_acceleration.value > 0 && is_perimeter(path.role())) {
             acceleration = m_config.perimeter_acceleration.get_abs_value(acceleration);
         } else if (m_config.bridge_acceleration.value > 0 && is_bridge(path.role())
             && path.role() != erOverhangPerimeter) {
             acceleration = m_config.bridge_acceleration.get_abs_value(acceleration);
+        } else if (m_config.overhangs_acceleration.value > 0 && path.role() == erOverhangPerimeter) {
+            acceleration = m_config.overhangs_acceleration.get_abs_value(acceleration);
+        } else if (m_config.solid_infill_acceleration.value > 0 && path.role() == erSolidInfill) {
+            acceleration = m_config.solid_infill_acceleration.get_abs_value(acceleration);
+        } else if (m_config.top_solid_infill_acceleration.value > 0 && path.role() == erTopSolidInfill) {
+            acceleration = m_config.top_solid_infill_acceleration.get_abs_value(acceleration);
         } else if (m_config.infill_acceleration.value > 0 && is_infill(path.role())) {
             acceleration = m_config.infill_acceleration.get_abs_value(acceleration);
         }

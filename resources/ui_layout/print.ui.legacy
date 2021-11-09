@@ -150,6 +150,8 @@ group:Modifiers
 group:Acceleration control (advanced)
 	setting:default_acceleration
 	setting:first_layer_acceleration
+	setting:travel_acceleration
+	setting:travel_deceleration_use_target
 	setting:perimeter_acceleration
 	setting:external_perimeter_acceleration
 	setting:solid_infill_acceleration

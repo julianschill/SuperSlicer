@@ -3868,6 +3868,7 @@ std::string GCode::_before_extrude(const ExtrusionPath &path, const std::string 
     double acceleration = get_default_acceleration(m_config);
     double travel_acceleration = m_writer.get_acceleration();
     if(acceleration > 0){
+
         if (m_config.travel_acceleration.value > 0)
             travel_acceleration = m_config.travel_acceleration.get_abs_value(acceleration);
 
@@ -3889,6 +3890,7 @@ std::string GCode::_before_extrude(const ExtrusionPath &path, const std::string 
                     acceleration = m_config.solid_infill_acceleration.get_abs_value(acceleration);
                 break;
             case erTopSolidInfill:
+            case erIroning:
                 if (m_config.top_solid_infill_acceleration.value >= 0)
                     acceleration = m_config.top_solid_infill_acceleration.get_abs_value(acceleration);
                 break;
@@ -3906,7 +3908,6 @@ std::string GCode::_before_extrude(const ExtrusionPath &path, const std::string 
             case erSkirt:
             case erSupportMaterial:
             case erSupportMaterialInterface:
-            case erIroning:
             case erWipeTower:
             case erMilling:
             case erCustom:
@@ -3922,49 +3923,60 @@ std::string GCode::_before_extrude(const ExtrusionPath &path, const std::string 
         } 
     }
 
-    if (travel_acceleration == acceleration) {
-        m_writer.set_acceleration((uint32_t)floor(acceleration + 0.5));
-        // go to first point of extrusion path (stop at midpoint to let us set the decel speed)
-        if (!m_last_pos_defined || m_last_pos != path.first_point()) {
-             Polyline polyline = this->travel_to(gcode, path.first_point(), path.role());
-             this->write_travel_to(gcode, polyline, "move to first " + description + " point (" + std::to_string(acceleration) +" == "+ std::to_string(travel_acceleration)+")");
-        }
-    } else {
-        // go to midpoint to let us set the decel speed)
-        if (!m_last_pos_defined || m_last_pos != path.first_point()) {
-            Polyline poly_start = this->travel_to(gcode, path.first_point(), path.role());
-            coordf_t length = poly_start.length();
-            if (length > SCALED_EPSILON) {
-                Polyline poly_end;
-                coordf_t min_length = scale_d(EXTRUDER_CONFIG_WITH_DEFAULT(nozzle_diameter, 0.5)) * 20;
-                if (poly_start.size() > 2 && length > min_length * 3) {
-                    //if complex travel, try to deccelerate only at the end, unless it's less than ~ 20 nozzle
-                    if (poly_start.lines().back().length() < min_length) {
-                        poly_end = poly_start;
-                        poly_start.clip_end(min_length);
-                        poly_end.clip_start(length - min_length);
-                    } else {
-                        poly_end.points.push_back(poly_start.points.back());
-                        poly_start.points.pop_back();
-                        poly_end.points.push_back(poly_start.points.back());
-                        poly_end.reverse();
-                    }
-                } else {
-                    poly_end = poly_start;
-                    poly_start.clip_end(length / 2);
-                    poly_end.clip_start(length / 2);
-                }
-                m_writer.set_acceleration((uint32_t)floor(travel_acceleration + 0.5));
-                this->write_travel_to(gcode, poly_start, "move to first " + description + " point (acceleration)");
-                //travel acceleration should be already set at startup via special gcode, and so it's automatically used by G0.
-                m_writer.set_acceleration((uint32_t)floor(acceleration + 0.5));
-                this->write_travel_to(gcode, poly_end, "move to first " + description + " point (deceleration)");
-            } else {
-                m_writer.set_acceleration((uint32_t)floor(travel_acceleration + 0.5));
-                this->write_travel_to(gcode, poly_start, "move to first " + description + " point (acceleration)");
+    if (m_config.travel_deceleration_use_target){
+        if (travel_acceleration == acceleration) {
+            m_writer.set_acceleration((uint32_t)floor(acceleration + 0.5));
+            // go to first point of extrusion path (stop at midpoint to let us set the decel speed)
+            if (!m_last_pos_defined || m_last_pos != path.first_point()) {
+                    Polyline polyline = this->travel_to(gcode, path.first_point(), path.role());
+                    this->write_travel_to(gcode, polyline, "move to first " + description + " point (" + std::to_string(acceleration) +" == "+ std::to_string(travel_acceleration)+")");
             }
         } else {
+            // go to midpoint to let us set the decel speed)
+            if (!m_last_pos_defined || m_last_pos != path.first_point()) {
+                Polyline poly_start = this->travel_to(gcode, path.first_point(), path.role());
+                coordf_t length = poly_start.length();
+                if (length > SCALED_EPSILON) {
+                    Polyline poly_end;
+                    coordf_t min_length = scale_d(EXTRUDER_CONFIG_WITH_DEFAULT(nozzle_diameter, 0.5)) * 20;
+                    if (poly_start.size() > 2 && length > min_length * 3) {
+                        //if complex travel, try to deccelerate only at the end, unless it's less than ~ 20 nozzle
+                        if (poly_start.lines().back().length() < min_length) {
+                            poly_end = poly_start;
+                            poly_start.clip_end(min_length);
+                            poly_end.clip_start(length - min_length);
+                        } else {
+                            poly_end.points.push_back(poly_start.points.back());
+                            poly_start.points.pop_back();
+                            poly_end.points.push_back(poly_start.points.back());
+                            poly_end.reverse();
+                        }
+                    } else {
+                        poly_end = poly_start;
+                        poly_start.clip_end(length / 2);
+                        poly_end.clip_start(length / 2);
+                    }
+                    m_writer.set_acceleration((uint32_t)floor(travel_acceleration + 0.5));
+                    this->write_travel_to(gcode, poly_start, "move to first " + description + " point (acceleration)");
+                    //travel acceleration should be already set at startup via special gcode, and so it's automatically used by G0.
+                    m_writer.set_acceleration((uint32_t)floor(acceleration + 0.5));
+                    this->write_travel_to(gcode, poly_end, "move to first " + description + " point (deceleration)");
+                } else {
+                    m_writer.set_acceleration((uint32_t)floor(travel_acceleration + 0.5));
+                    this->write_travel_to(gcode, poly_start, "move to first " + description + " point (acceleration)");
+                }
+            } else {
+                m_writer.set_acceleration((uint32_t)floor(acceleration + 0.5));
+            }
+        }
+    } else {
+        if (!m_last_pos_defined || m_last_pos != path.first_point()) {
+            m_writer.set_acceleration((uint32_t)floor(travel_acceleration + 0.5));
+            Polyline polyline = this->travel_to(gcode, path.first_point(), path.role());
+            this->write_travel_to(gcode, polyline, "move to first " + description + " point");
             m_writer.set_acceleration((uint32_t)floor(acceleration + 0.5));
+        } else {
+                m_writer.set_acceleration((uint32_t)floor(acceleration + 0.5));
         }
     }
 

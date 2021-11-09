@@ -1368,6 +1368,7 @@ public:
     ConfigOptionInts                top_fan_speed;
     ConfigOptionFloatOrPercent      top_solid_infill_acceleration;
     ConfigOptionFloatOrPercent      travel_acceleration;
+    ConfigOptionBool                travel_deceleration_use_target;
     ConfigOptionBools               wipe;
     ConfigOptionBool                wipe_tower;
     ConfigOptionFloatOrPercent      wipe_tower_brim;
@@ -1474,6 +1475,7 @@ protected:
         OPT_PTR(top_fan_speed);
         OPT_PTR(top_solid_infill_acceleration);
         OPT_PTR(travel_acceleration);
+        OPT_PTR(travel_deceleration_use_target);
         OPT_PTR(wipe);
         OPT_PTR(wipe_tower);
         OPT_PTR(wipe_tower_brim);

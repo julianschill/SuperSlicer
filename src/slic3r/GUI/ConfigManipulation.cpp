@@ -436,7 +436,7 @@ void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig* config)
     bool have_default_acceleration = config->option<ConfigOptionFloatOrPercent>("default_acceleration")->value > 0;
     for (auto el : { "perimeter_acceleration", "external_perimeter_acceleration", "infill_acceleration",
                     "bridge_acceleration", "overhangs_acceleration", "first_layer_acceleration", "solid_infill_acceleration", 
-                    "top_solid_infill_acceleration", "travel_acceleration" })
+                    "top_solid_infill_acceleration", "travel_acceleration", "travel_deceleration_use_target"})
         toggle_field(el, have_default_acceleration);
 
     bool have_skirt = config->opt_int("skirts") > 0;

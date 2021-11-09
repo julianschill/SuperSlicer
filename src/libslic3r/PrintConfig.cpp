@@ -4385,13 +4385,20 @@ void PrintConfigDef::init_fff_params()
     def->label = L("Travel");
     def->full_label = L("Travel acceleration");
     def->category = OptionCategory::speed;
-    def->tooltip = L("Acceleration for travel moves (jumps between distant extrusion points)."
-            "\nNote that the deceleration of a travel will use the acceleration value of the extrusion that will be printed after it (if any)");
+    def->tooltip = L("Acceleration for travel moves (jumps between distant extrusion points).");
     def->sidetext = L("mm/s² or %");
     def->ratio_over = "default_acceleration";
     def->min = 0;
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionFloatOrPercent(1500, false));
+
+    def = this->add("travel_deceleration_use_target", coBool);
+    def->label = L("Decelerate with target acceleration");
+    def->full_label = L("Use target acceleration for travel deceleration");
+    def->category = OptionCategory::speed;
+    def->tooltip = L("If selected, the deceleration of a travel will use the acceleration value of the extrusion that will be printed after it (if any) ");
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionBool(true));
 
     def = this->add("travel_speed", coFloat);
     def->label = L("Travel");

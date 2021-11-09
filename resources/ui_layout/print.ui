@@ -267,11 +267,10 @@ group:sidetext_width$7:Modifiers
 		setting:label_width$8:width$4:small_perimeter_min_length
 		setting:label_width$8:width$4:small_perimeter_max_length
 		setting:label_width$8:width$4:small_perimeter_speed
-group:label_width$8:sidetext_width$7:Acceleration control (advanced)
+group:label_width$9:sidetext_width$8:Acceleration control (advanced)
 	line:Default acceleration
 		setting:width$4:default_acceleration
 		setting:width$4:first_layer_acceleration
-		setting:width$4:travel_acceleration
 	line:Perimeter acceleration
 		setting:width$4:perimeter_acceleration
 		setting:width$4:external_perimeter_acceleration
@@ -285,7 +284,10 @@ group:label_width$8:sidetext_width$7:Acceleration control (advanced)
 		setting:width$4:bridge_acceleration
 		setting:width$4:overhangs_acceleration
 	end_line
-
+	line:Travel acceleration
+		setting:width$4:travel_acceleration
+		setting:width$4:travel_deceleration_use_target
+	end_line
 group:Autospeed (advanced)
 	setting:label$Volumetric speed for Autospeed:max_volumetric_speed
 	setting:max_print_speed

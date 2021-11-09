@@ -532,6 +532,7 @@ const std::vector<std::string>& Preset::print_options()
         "solid_infill_acceleration",
         "top_solid_infill_acceleration",
         "travel_acceleration",
+        "travel_deceleration_use_target",
         // skirt
         "skirts",
         "skirt_distance",

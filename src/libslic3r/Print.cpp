@@ -181,6 +181,7 @@ bool Print::invalidate_state_by_config_options(const std::vector<t_config_option
         "top_solid_infill_acceleration",
         "threads",
         "travel_acceleration",
+        "travel_deceleration_use_target",
         "travel_speed",
         "travel_speed_z",
         "use_firmware_retraction",

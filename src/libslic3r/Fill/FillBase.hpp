@@ -36,7 +36,8 @@ public:
 
 struct FillParams
 {
-    bool        full_infill() const { return density > 0.9999f && density < 1.0001f; }
+    // Allways consider bridge as full infill, whatever the density is.
+    bool        full_infill() const { return flow.bridge || (density > 0.9999f && density < 1.0001f); }
     // Don't connect the fill lines around the inner perimeter.
     bool        dont_connect() const { return connection == InfillConnection::icNotConnected; }
 
@@ -88,9 +89,9 @@ public:
     // Index of the layer.
     size_t      layer_id;
     // Z coordinate of the top print surface, in unscaled coordinates
-    coordf_t    z;
+    double      z;
     // infill / perimeter overlap, in unscaled coordinates 
-    coordf_t    overlap;
+    double      overlap;
     ExPolygons  no_overlap_expolygons;
     // in radians, ccw, 0 = East
     float       angle;

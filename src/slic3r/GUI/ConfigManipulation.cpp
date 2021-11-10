@@ -210,42 +210,6 @@ void ConfigManipulation::update_print_fff_config(DynamicPrintConfig* config, con
         apply(config, &new_conf);
     }
 
-    // check forgotten '%'
-    {
-        struct optDescr {
-            ConfigOptionFloatOrPercent* opt;
-            std::string name;
-            float min;
-            float max;
-        };
-        float diameter = 0.4f;
-        if (config->option<ConfigOptionFloatOrPercent>("extrusion_width")->percent) {
-            //has to be percent
-            diameter = 0;
-        } else {
-            diameter = config->option<ConfigOptionFloatOrPercent>("extrusion_width")->value;
-        }
-        std::vector<optDescr> opts;
-        opts.push_back({ config->option<ConfigOptionFloatOrPercent>("infill_overlap"), "infill_overlap", 0, diameter * 10 });
-        for (int i = 0; i < opts.size(); i++) {
-            if ((!opts[i].opt->percent) && (opts[i].opt->get_abs_value(diameter) < opts[i].min || opts[i].opt->get_abs_value(diameter) > opts[i].max)) {
-                wxString msg_text = _(L("Did you forgot to put a '%' in the " + opts[i].name + " field? "
-                    "it's currently set to " + std::to_string(opts[i].opt->get_abs_value(diameter)) + " mm."));
-                if (is_global_config) {
-                    msg_text += "\n\n" + _(L("Shall I add the '%'?"));
-                    wxMessageDialog dialog(nullptr, msg_text, _(L("Wipe Tower")),
-                        wxICON_WARNING | (is_global_config ? wxYES | wxNO : wxOK));
-                    DynamicPrintConfig new_conf = *config;
-                    auto answer = dialog.ShowModal();
-                    if (answer == wxID_YES) {
-                        new_conf.set_key_value(opts[i].name, new ConfigOptionFloatOrPercent(opts[i].opt->value * 100, true));
-                        apply(config, &new_conf);
-                    }
-                }
-            }
-        }
-    }
-
     // check changes from FloatOrPercent to percent (useful to migrate config from prusa to Slic3r)
     {
         std::vector<std::string> names;
@@ -388,7 +352,9 @@ void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig* config)
                     "solid_infill_every_layers", "solid_infill_below_area", "infill_extruder", "infill_anchor_max" })
         toggle_field(el, have_infill);
     // Only allow configuration of open anchors if the anchoring is enabled.
-    bool has_infill_anchors = have_infill && config->option<ConfigOptionFloatOrPercent>("infill_anchor_max")->value > 0;
+    bool has_infill_anchors = have_infill && config->option<ConfigOptionEnum<InfillConnection>>("infill_connection")->value != InfillConnection::icNotConnected;
+    toggle_field("infill_anchor_max", has_infill_anchors);
+    has_infill_anchors = has_infill_anchors && config->option<ConfigOptionFloatOrPercent>("infill_anchor_max")->value > 0;
     toggle_field("infill_anchor", has_infill_anchors);
 
     bool can_have_infill_dense = config->option<ConfigOptionPercent>("fill_density")->value < 50;
@@ -398,6 +364,9 @@ void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig* config)
     bool have_infill_dense = config->opt_bool("infill_dense") && can_have_infill_dense;
     for (auto el : { "infill_dense_algo" })
         toggle_field(el, have_infill_dense);
+    if(have_infill)
+        for (auto el : { "infill_every_layers", "infill_only_where_needed" })
+            toggle_field(el, !have_infill_dense);
 
     bool has_spiral_vase         = have_perimeters && config->opt_bool("spiral_vase");
     bool has_top_solid_infill 	 = config->opt_int("top_solid_layers") > 0 || has_spiral_vase;
@@ -418,8 +387,11 @@ void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig* config)
     // gap fill  can appear in infill
     //toggle_field("gap_fill_speed", have_perimeters && config->opt_bool("gap_fill"));
 
+    bool has_ironing_pattern = config->opt_enum<InfillPattern>("top_fill_pattern") == InfillPattern::ipSmooth
+        || config->opt_enum<InfillPattern>("bottom_fill_pattern") == InfillPattern::ipSmooth
+        || config->opt_enum<InfillPattern>("solid_fill_pattern") == InfillPattern::ipSmooth;
     for (auto el : {"fill_smooth_width, fill_smooth_distribution" })
-        toggle_field(el, config->opt_enum<InfillPattern>("top_fill_pattern") == InfillPattern::ipSmooth);
+        toggle_field(el, has_ironing_pattern);
 
     for (auto el : { "ironing", "top_fill_pattern", "infill_connection_top",  "top_infill_extrusion_width", "top_solid_infill_speed" })
         toggle_field(el, has_top_solid_infill);
@@ -436,7 +408,7 @@ void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig* config)
     bool have_default_acceleration = config->option<ConfigOptionFloatOrPercent>("default_acceleration")->value > 0;
     for (auto el : { "perimeter_acceleration", "external_perimeter_acceleration", "infill_acceleration",
                     "bridge_acceleration", "overhangs_acceleration", "first_layer_acceleration", "solid_infill_acceleration", 
-                    "top_solid_infill_acceleration", "travel_acceleration" })
+                    "top_solid_infill_acceleration", "travel_acceleration", "travel_deceleration_use_target"})
         toggle_field(el, have_default_acceleration);
 
     bool have_skirt = config->opt_int("skirts") > 0;
@@ -480,9 +452,14 @@ void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig* config)
     toggle_field("support_material_extruder", have_support_material || have_skirt);
     toggle_field("support_material_speed", have_support_material || have_brim || have_skirt);
 
-    bool has_ironing = has_top_solid_infill && config->opt_bool("ironing");
-    for (auto el : { "ironing_type", "ironing_flowrate", "ironing_spacing", "ironing_angle", "ironing_speed" })
-    	toggle_field(el, has_ironing);
+    bool has_PP_ironing = has_top_solid_infill && config->opt_bool("ironing");
+    for (auto el : { "ironing_type", "ironing_flowrate", "ironing_spacing", "ironing_angle" })
+    	toggle_field(el, has_PP_ironing);
+
+    bool has_ironing = has_PP_ironing || has_ironing_pattern;
+    for (auto el : { "ironing_speed" })
+        toggle_field(el, has_ironing);
+    
 
     bool have_sequential_printing = config->opt_bool("complete_objects");
     for (auto el : { /*"extruder_clearance_radius", "extruder_clearance_height",*/ "complete_objects_one_skirt",

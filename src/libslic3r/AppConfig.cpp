@@ -169,6 +169,9 @@ void AppConfig::set_defaults()
         if (get("custom_toolbar_size").empty())
             set("custom_toolbar_size", "100");
 
+        if (get("setting_icon").empty())
+            set("setting_icon", "1");
+
         if (get("auto_toolbar_size").empty())
             set("auto_toolbar_size", "100");
 
@@ -194,6 +197,15 @@ void AppConfig::set_defaults()
 
         if (get("default_action_on_new_project").empty())
             set("default_action_on_new_project", "1");
+		
+        if (get("use_rich_tooltip").empty())
+            set("use_rich_tooltip", 
+//#if __APPLE__
+			//"1"
+//#else
+			"0"
+//#endif
+			);
     }
 #if ENABLE_CUSTOMIZABLE_FILES_ASSOCIATION_ON_WIN
     else {

@@ -43,20 +43,23 @@ private:
     void initialize();
 
     struct BridgeDirection {
-        BridgeDirection(double a = -1.) : angle(a), coverage(0.), max_length(0.) {}
-        // the best direction is the one causing most lines to be bridged (thus most coverage)
-        bool operator<(const BridgeDirection &other) const {
-            // Initial sort by coverage only - comparator must obey strict weak ordering
-            return this->coverage > other.coverage;
-        };
+        BridgeDirection(double a = -1., float along_perimeter = 0) : angle(a), coverage(0.), along_perimeter_length(along_perimeter){}
+
         double angle;
         double coverage;
-        double max_length;
-        double mean_length;
+
+        float along_perimeter_length;
+        coordf_t total_length_anchored = 0;
+        coordf_t median_length_anchor = 0;
+        coordf_t max_length_anchored = 0;
+        uint32_t nb_lines_anchored = 0;
+        coordf_t total_length_free = 0;
+        coordf_t max_length_free = 0;
+        uint32_t nb_lines_free = 0;
     };
 public:
     // Get possible briging direction candidates.
-    std::vector<double> bridge_direction_candidates() const;
+    std::vector<BridgeDirection> bridge_direction_candidates(bool only_from_polygon = false) const;
 
     // Open lines representing the supporting edges.
     Polylines _edges;

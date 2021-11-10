@@ -774,28 +774,32 @@ std::string CoolingBuffer::apply_layer_cooldown(
             //if (EXTRUDER_CONFIG(cooling)) {
                 if (layer_time < slowdown_below_layer_time && fan_below_layer_time > 0) {
                     // Layer time very short. Enable the fan to a full throttle.
-                    fan_speed_new = max_fan_speed;
+                    fan_speed_new = std::max(max_fan_speed, fan_speed_new);
+                    bridge_fan_speed = std::max(max_fan_speed, bridge_fan_speed);
+                    bridge_internal_fan_speed = std::max(max_fan_speed, bridge_internal_fan_speed);
+                    ext_peri_fan_speed = std::max(max_fan_speed, ext_peri_fan_speed); // cannot be ovveridden
+                    //top_fan_speed = std::max(max_fan_speed, top_fan_speed);
                 } else if (layer_time < fan_below_layer_time) {
                     // Layer time quite short. Enable the fan proportionally according to the current layer time.
                     assert(layer_time >= slowdown_below_layer_time);
                     double t = (layer_time - slowdown_below_layer_time) / (fan_below_layer_time - slowdown_below_layer_time);
-                    fan_speed_new = int(floor(t * min_fan_speed + (1. - t) * max_fan_speed) + 0.5);
+                    if (fan_speed_new < max_fan_speed)
+                        fan_speed_new = int(floor(t * min_fan_speed + (1. - t) * max_fan_speed) + 0.5);
                     if (bridge_fan_speed >= 0 && bridge_fan_speed < max_fan_speed)
                         bridge_fan_speed = int(floor(t * bridge_fan_speed + (1. - t) * max_fan_speed) + 0.5);
                     if (bridge_internal_fan_speed >= 0 && bridge_internal_fan_speed < max_fan_speed)
                         bridge_internal_fan_speed = int(floor(t * bridge_internal_fan_speed + (1. - t) * max_fan_speed) + 0.5);
-                    if (top_fan_speed >= 0 && top_fan_speed < max_fan_speed)
-                        top_fan_speed = int(floor(t * top_fan_speed + (1. - t) * max_fan_speed) + 0.5);
                     if (ext_peri_fan_speed >= 0 && ext_peri_fan_speed < max_fan_speed)
                         ext_peri_fan_speed = int(floor(t * ext_peri_fan_speed + (1. - t) * max_fan_speed) + 0.5);
+                    //if (top_fan_speed >= 0 && top_fan_speed < max_fan_speed) // cannot be ovveridden
+                    //    top_fan_speed = int(floor(t * top_fan_speed + (1. - t) * max_fan_speed) + 0.5);
                 }
             //}
 
             // Is the fan speed ramp enabled?
             int full_fan_speed_layer = EXTRUDER_CONFIG(full_fan_speed_layer);
-            // When ramping up fan speed from disable_fan_first_layers to full_fan_speed_layer, force disable_fan_first_layers above zero,
-            // so there will be a zero fan speed at least at the 1st layer.
-            disable_fan_first_layers = std::max(disable_fan_first_layers, 1);
+            // When ramping up fan speed from disable_fan_first_layers to full_fan_speed_layer, if disable_fan_first_layers is zero,
+            // the not-fan layer is a hypothetical -1 layer.
             if (int(layer_id) >= disable_fan_first_layers && int(layer_id) + 1 < full_fan_speed_layer) {
                 // Ramp up the fan speed from disable_fan_first_layers to full_fan_speed_layer.
                 float factor = float(int(layer_id + 1) - disable_fan_first_layers) / float(full_fan_speed_layer - disable_fan_first_layers);

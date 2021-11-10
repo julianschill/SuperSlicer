@@ -44,11 +44,11 @@ void CalibrationBedDialog::create_geometry(wxCommandEvent& event_args) {
         gui_app->app_config->set("autocenter", "0");
     }
     std::vector<size_t> objs_idx = plat->load_files(std::vector<std::string>{
-            Slic3r::resources_dir()+"/calibration/bed_leveling/patch.amf",
-            Slic3r::resources_dir()+"/calibration/bed_leveling/patch.amf",
-            Slic3r::resources_dir()+"/calibration/bed_leveling/patch.amf",
-            Slic3r::resources_dir()+"/calibration/bed_leveling/patch.amf",
-            Slic3r::resources_dir()+"/calibration/bed_leveling/patch.amf"}, true, false, false);
+            (boost::filesystem::path(Slic3r::resources_dir()) / "calibration" / "bed_leveling" / "patch.amf").string(),
+            (boost::filesystem::path(Slic3r::resources_dir()) / "calibration" / "bed_leveling" / "patch.amf").string(),
+            (boost::filesystem::path(Slic3r::resources_dir()) / "calibration" / "bed_leveling" / "patch.amf").string(),
+            (boost::filesystem::path(Slic3r::resources_dir()) / "calibration" / "bed_leveling" / "patch.amf").string(),
+            (boost::filesystem::path(Slic3r::resources_dir()) / "calibration" / "bed_leveling" / "patch.amf").string()}, true, false, false);
 
     assert(objs_idx.size() == 5);
     const DynamicPrintConfig* printConfig = this->gui_app->get_tab(Preset::TYPE_FFF_PRINT)->get_config();
@@ -121,6 +121,8 @@ void CalibrationBedDialog::create_geometry(wxCommandEvent& event_args) {
         model.objects[objs_idx[i]]->config.set_key_value("gap_fill", new ConfigOptionBool(false));
         model.objects[objs_idx[i]]->config.set_key_value("first_layer_extrusion_width", new ConfigOptionFloatOrPercent(140, true));
         model.objects[objs_idx[i]]->config.set_key_value("bottom_fill_pattern", new ConfigOptionEnum<InfillPattern>(ipRectilinearWGapFill));
+        //disable ironing post-process
+        model.objects[objs_idx[i]]->config.set_key_value("ironing", new ConfigOptionBool(false));
     }
     if (bed_shape->values.size() == 4) {
         model.objects[objs_idx[0]]->config.set_key_value("fill_angle", new ConfigOptionFloat(90));

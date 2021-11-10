@@ -3952,6 +3952,7 @@ std::string GCode::_before_extrude(const ExtrusionPath &path, const std::string 
                     acceleration = std::min(max_acceleration, m_config.perimeter_acceleration.get_abs_value(acceleration));
                 break;
             case erExternalPerimeter:
+            case erThinWall:
                 if (m_config.external_perimeter_acceleration.value >= 0)
                     acceleration = std::min(max_acceleration, m_config.external_perimeter_acceleration.get_abs_value(acceleration));
                 break;
@@ -3960,6 +3961,7 @@ std::string GCode::_before_extrude(const ExtrusionPath &path, const std::string 
                     acceleration = std::min(max_acceleration, m_config.infill_acceleration.get_abs_value(acceleration));
                 break;
             case erSolidInfill:
+            case erGapFill:
                 if (m_config.solid_infill_acceleration.value >= 0)
                     acceleration = std::min(max_acceleration, m_config.solid_infill_acceleration.get_abs_value(acceleration));
                 break;
@@ -3977,8 +3979,6 @@ std::string GCode::_before_extrude(const ExtrusionPath &path, const std::string 
                 if (m_config.overhangs_acceleration.value >= 0)
                     acceleration = std::min(max_acceleration, m_config.overhangs_acceleration.get_abs_value(acceleration));
                 break;
-            case erThinWall:
-            case erGapFill:
             case erSkirt:
             case erSupportMaterial:
             case erSupportMaterialInterface:

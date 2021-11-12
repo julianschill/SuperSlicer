@@ -79,6 +79,7 @@ enum PrintHostType {
     htAstroBox,
     htRepetier,
     htKlipper,
+    htMPMDv2,
 };
 
 enum AuthorizationType {
@@ -237,6 +238,7 @@ template<> inline const t_config_enum_values& ConfigOptionEnum<PrintHostType>::g
         {"astrobox", htAstroBox},
         {"repetier", htRepetier},
         {"klipper", htKlipper},
+        {"mpmdv2", htMPMDv2},
     };
     return keys_map;
 }

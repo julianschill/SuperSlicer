@@ -4007,7 +4007,7 @@ std::string GCode::_before_extrude(const ExtrusionPath &path, const std::string 
         }
 
         if (this->on_first_layer() && m_config.first_layer_acceleration.value > 0) {
-            acceleration = std::min(max_acceleration, m_config.first_layer_acceleration.get_abs_value(acceleration));
+            acceleration = std::min(max_acceleration, std::min(acceleration, m_config.first_layer_acceleration.get_abs_value(acceleration)));
         }
     }
         

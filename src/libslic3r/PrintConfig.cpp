@@ -1914,11 +1914,11 @@ void PrintConfigDef::init_fff_params()
     def->set_default_value(new ConfigOptionPercent(10));
 
     def = this->add("first_layer_acceleration", coFloatOrPercent);
-    def->label = L("First layer");
+    def->label = L("Max");
     def->full_label = L("First layer acceleration");
     def->category = OptionCategory::speed;
-    def->tooltip = L("This is the acceleration your printer will use for first layer."
-                "\nCan be a % of the default acceleration"
+    def->tooltip = L("This is the maximum acceleration your printer will use for first layer."
+                "\nIf set to %, alle accelerations will be reduced by that ratio."
                 "\nSet zero to disable acceleration control for first layer.");
     def->sidetext = L("mm/s² or %");
     def->ratio_over = "default_acceleration";

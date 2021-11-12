@@ -3952,7 +3952,6 @@ std::string GCode::_before_extrude(const ExtrusionPath &path, const std::string 
                     acceleration = std::min(max_acceleration, m_config.perimeter_acceleration.get_abs_value(acceleration));
                 break;
             case erExternalPerimeter:
-            case erThinWall:
                 if (m_config.external_perimeter_acceleration.value >= 0)
                     acceleration = std::min(max_acceleration, m_config.external_perimeter_acceleration.get_abs_value(acceleration));
                 break;
@@ -3961,27 +3960,42 @@ std::string GCode::_before_extrude(const ExtrusionPath &path, const std::string 
                     acceleration = std::min(max_acceleration, m_config.infill_acceleration.get_abs_value(acceleration));
                 break;
             case erSolidInfill:
-            case erGapFill:
                 if (m_config.solid_infill_acceleration.value >= 0)
                     acceleration = std::min(max_acceleration, m_config.solid_infill_acceleration.get_abs_value(acceleration));
                 break;
             case erTopSolidInfill:
-            case erIroning:
                 if (m_config.top_solid_infill_acceleration.value >= 0)
                     acceleration = std::min(max_acceleration, m_config.top_solid_infill_acceleration.get_abs_value(acceleration));
                 break;
+            case erIroning:
+                if (m_config.ironing_acceleration.value >= 0)
+                    acceleration = std::min(max_acceleration, m_config.ironing_acceleration.get_abs_value(acceleration));
+            case erSupportMaterial:
+                if (m_config.support_material_acceleration.value >= 0)
+                    acceleration = std::min(max_acceleration, m_config.support_material_acceleration.get_abs_value(acceleration));
+                break;
+            case erSupportMaterialInterface:
+                if (m_config.support_material_interface_acceleration.value >= 0)
+                    acceleration = std::min(max_acceleration, m_config.support_material_interface_acceleration.get_abs_value(acceleration));
+                break;
             case erBridgeInfill:
-            case erInternalBridgeInfill:
                 if (m_config.bridge_acceleration.value >= 0)
                     acceleration = std::min(max_acceleration, m_config.bridge_acceleration.get_abs_value(acceleration));
+            case erInternalBridgeInfill:
+                if (m_config.bridge_acceleration_internal.value >= 0)
+                    acceleration = std::min(max_acceleration, m_config.bridge_acceleration_internal.get_abs_value(acceleration));
                 break;
             case erOverhangPerimeter:
                 if (m_config.overhangs_acceleration.value >= 0)
                     acceleration = std::min(max_acceleration, m_config.overhangs_acceleration.get_abs_value(acceleration));
                 break;
+            case erGapFill:
+                if (m_config.gap_fill_acceleration.value >= 0)
+                    acceleration = std::min(max_acceleration, m_config.gap_fill_acceleration.get_abs_value(acceleration));
+            case erThinWall:
+                if (m_config.thin_walls_acceleration.value >= 0)
+                    acceleration = std::min(max_acceleration, m_config.thin_walls_acceleration.get_abs_value(acceleration));
             case erSkirt:
-            case erSupportMaterial:
-            case erSupportMaterialInterface:
             case erWipeTower:
             case erMilling:
             case erCustom:

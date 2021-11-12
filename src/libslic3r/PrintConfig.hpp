@@ -79,6 +79,7 @@ enum PrintHostType {
     htAstroBox,
     htRepetier,
     htKlipper,
+    htMPMDv2,
 };
 
 enum AuthorizationType {
@@ -237,6 +238,7 @@ template<> inline const t_config_enum_values& ConfigOptionEnum<PrintHostType>::g
         {"astrobox", htAstroBox},
         {"repetier", htRepetier},
         {"klipper", htKlipper},
+        {"mpmdv2", htMPMDv2},
     };
     return keys_map;
 }
@@ -1312,6 +1314,7 @@ public:
     ConfigOptionPoints              bed_shape;
     ConfigOptionInts                bed_temperature;
     ConfigOptionFloatOrPercent      bridge_acceleration;
+    ConfigOptionFloatOrPercent      bridge_acceleration_internal;
     ConfigOptionInts                bridge_fan_speed;
     ConfigOptionInts                bridge_internal_fan_speed;
     ConfigOptionInts                chamber_temperature;
@@ -1345,7 +1348,9 @@ public:
     ConfigOptionFloat               first_layer_min_speed;
     ConfigOptionInts                first_layer_temperature;
     ConfigOptionInts                full_fan_speed_layer;
+    ConfigOptionFloatOrPercent      gap_fill_acceleration;
     ConfigOptionFloatOrPercent      infill_acceleration;
+    ConfigOptionFloatOrPercent      ironing_acceleration;
     ConfigOptionFloat               lift_min;
     ConfigOptionInts                max_fan_speed;
     ConfigOptionFloatsOrPercents    max_layer_height;
@@ -1386,7 +1391,10 @@ public:
     ConfigOptionInts                slowdown_below_layer_time;
     ConfigOptionBool                spiral_vase;
     ConfigOptionInt                 standby_temperature_delta;
+    ConfigOptionFloatOrPercent      support_material_acceleration;
+    ConfigOptionFloatOrPercent      support_material_interface_acceleration;
     ConfigOptionInts                temperature;
+    ConfigOptionFloatOrPercent      thin_walls_acceleration;
     ConfigOptionInt                 threads;
     ConfigOptionPoints              thumbnails;
     ConfigOptionString              thumbnails_color;
@@ -1424,6 +1432,7 @@ protected:
         OPT_PTR(bed_shape);
         OPT_PTR(bed_temperature);
         OPT_PTR(bridge_acceleration);
+        OPT_PTR(bridge_acceleration_internal);
         OPT_PTR(bridge_fan_speed);
         OPT_PTR(bridge_internal_fan_speed);
         OPT_PTR(chamber_temperature);
@@ -1457,7 +1466,9 @@ protected:
         OPT_PTR(first_layer_min_speed);
         OPT_PTR(first_layer_temperature);
         OPT_PTR(full_fan_speed_layer);
+        OPT_PTR(gap_fill_acceleration);
         OPT_PTR(infill_acceleration);
+        OPT_PTR(ironing_acceleration);
         OPT_PTR(lift_min);
         OPT_PTR(max_fan_speed);
         OPT_PTR(max_layer_height);
@@ -1498,7 +1509,10 @@ protected:
         OPT_PTR(slowdown_below_layer_time);
         OPT_PTR(spiral_vase);
         OPT_PTR(standby_temperature_delta);
+        OPT_PTR(support_material_acceleration);
+        OPT_PTR(support_material_interface_acceleration);
         OPT_PTR(temperature);
+        OPT_PTR(thin_walls_acceleration);
         OPT_PTR(threads);
         OPT_PTR(thumbnails);
         OPT_PTR(thumbnails_color);

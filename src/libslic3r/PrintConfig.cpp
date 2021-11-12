@@ -323,6 +323,19 @@ void PrintConfigDef::init_fff_params()
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionFloatOrPercent(0,false));
 
+    def = this->add("bridge_acceleration_internal", coFloatOrPercent);
+    def->label = L("Internal bridges ");
+    def->full_label = L("Internal bridges acceleration");
+    def->category = OptionCategory::speed;
+    def->tooltip = L("This is the acceleration your printer will use for internal bridges. "
+                "\nCan be a % of the default acceleration"
+                "\nSet zero to disable acceleration control for internal bridges accelerations.");
+    def->sidetext = L("mm/s² or %");
+    def->ratio_over = "default_acceleration";
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionFloatOrPercent(0,false));
+
     def = this->add("bridge_angle", coFloat);
     def->label = L("Bridging");
     def->full_label = L("Bridging angle");
@@ -1901,11 +1914,11 @@ void PrintConfigDef::init_fff_params()
     def->set_default_value(new ConfigOptionPercent(10));
 
     def = this->add("first_layer_acceleration", coFloatOrPercent);
-    def->label = L("First layer");
+    def->label = L("Max");
     def->full_label = L("First layer acceleration");
     def->category = OptionCategory::speed;
-    def->tooltip = L("This is the acceleration your printer will use for first layer."
-                "\nCan be a % of the default acceleration"
+    def->tooltip = L("This is the maximum acceleration your printer will use for first layer."
+                "\nIf set to %, alle accelerations will be reduced by that ratio."
                 "\nSet zero to disable acceleration control for first layer.");
     def->sidetext = L("mm/s² or %");
     def->ratio_over = "default_acceleration";
@@ -2045,6 +2058,19 @@ void PrintConfigDef::init_fff_params()
         "when there is not enough space for another perimeter or an infill.");
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionBool(true));
+
+    def = this->add("gap_fill_acceleration", coFloatOrPercent);
+    def->label = L("Gap fill");
+    def->full_label = L("Gap fill acceleration");
+    def->category = OptionCategory::speed;
+    def->tooltip = L("This is the acceleration your printer will use for gap fills. "
+                "\nCan be a % of the default acceleration"
+                "\nSet zero to disable acceleration control for gap fills.");
+    def->sidetext = L("mm/s² or %");
+    def->ratio_over = "default_acceleration";
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionFloatOrPercent(0,false));
 
     def = this->add("gap_fill_last", coBool);
     def->label = L("after last perimeter");
@@ -2470,6 +2496,19 @@ void PrintConfigDef::init_fff_params()
     def->category = OptionCategory::ironing;
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionBool(false));
+
+    def = this->add("ironing_acceleration", coFloatOrPercent);
+    def->label = L("Ironing");
+    def->full_label = L("Ironing acceleration");
+    def->category = OptionCategory::speed;
+    def->tooltip = L("This is the acceleration your printer will use for ironing. "
+                "\nCan be a % of the default acceleration"
+                "\nSet zero to disable acceleration control for ironing.");
+    def->sidetext = L("mm/s² or %");
+    def->ratio_over = "default_acceleration";
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionFloatOrPercent(0,false));
 
     def = this->add("ironing_angle", coFloat);
     def->label = L("Ironing angle");
@@ -2989,6 +3028,7 @@ void PrintConfigDef::init_fff_params()
     def->enum_values.push_back("astrobox");
     def->enum_values.push_back("repetier");
     def->enum_values.push_back("klipper");
+    def->enum_values.push_back("mpmdv2");
     def->enum_labels.push_back("PrusaLink");
     def->enum_labels.push_back("OctoPrint");
     def->enum_labels.push_back("Duet");
@@ -2996,6 +3036,7 @@ void PrintConfigDef::init_fff_params()
     def->enum_labels.push_back("AstroBox");
     def->enum_labels.push_back("Repetier");
     def->enum_labels.push_back("Klipper");
+    def->enum_labels.push_back("MPMDv2");
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionEnum<PrintHostType>(htOctoPrint));
 
@@ -4035,6 +4076,19 @@ void PrintConfigDef::init_fff_params()
     def->tooltip = L("Enable support material generation.");
     def->set_default_value(new ConfigOptionBool(false));
 
+    def = this->add("support_material_acceleration", coFloatOrPercent);
+    def->label = L("Default");
+    def->full_label = L("Support acceleration");
+    def->category = OptionCategory::speed;
+    def->tooltip = L("This is the acceleration your printer will use for support material. "
+                "\nCan be a % of the default acceleration"
+                "\nSet zero to disable acceleration control for support material accelerations.");
+    def->sidetext = L("mm/s² or %");
+    def->ratio_over = "default_acceleration";
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionFloatOrPercent(0,false));
+
     def = this->add("support_material_auto", coBool);
     def->label = L("Auto generated supports");
     def->category = OptionCategory::support;
@@ -4042,6 +4096,19 @@ void PrintConfigDef::init_fff_params()
                      " If unchecked, supports will be generated inside the \"Support Enforcer\" volumes only.");
     def->mode = comSimple;
     def->set_default_value(new ConfigOptionBool(true));
+
+    def = this->add("support_material_interface_acceleration", coFloatOrPercent);
+    def->label = L("Interface");
+    def->full_label = L("Support interface acceleration");
+    def->category = OptionCategory::speed;
+    def->tooltip = L("This is the acceleration your printer will use for support material interfaces. "
+                "\nCan be a % of the default acceleration"
+                "\nSet zero to disable acceleration control for support material interfaces.");
+    def->sidetext = L("mm/s² or %");
+    def->ratio_over = "default_acceleration";
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionFloatOrPercent(0,false));
 
     def = this->add("support_material_xy_spacing", coFloatOrPercent);
     def->label = L("XY separation between an object and its support");
@@ -4378,6 +4445,19 @@ void PrintConfigDef::init_fff_params()
                     " You can deactivate this if you are using thin walls as a custom support, to reduce adhesion a little.");
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionBool(true));
+
+    def = this->add("thin_walls_acceleration", coFloatOrPercent);
+    def->label = L("Thin Walls");
+    def->full_label = L("Thin walls acceleration");
+    def->category = OptionCategory::speed;
+    def->tooltip = L("This is the acceleration your printer will use for thin walls. "
+                "\nCan be a % of the default acceleration"
+                "\nSet zero to disable acceleration control for thin walls.");
+    def->sidetext = L("mm/s² or %");
+    def->ratio_over = "default_acceleration";
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionFloatOrPercent(0,false));
 
     def = this->add("thin_walls_speed", coFloat);
     def->label = L("Thin walls");
@@ -6162,8 +6242,16 @@ void PrintConfigDef::to_prusa(t_config_option_key& opt_key, std::string& value, 
         }
     } else if ("elephant_foot_min_width" == opt_key) {
         opt_key = "elefant_foot_min_width";
-    } else if("first_layer_acceleration" == opt_key || "solid_infill_acceleration" == opt_key || "top_solid_infill_acceleration" == opt_key || "infill_acceleration" == opt_key || "bridge_acceleration" == opt_key || "overhangs_acceleration" == opt_key || "default_acceleration" == opt_key || "perimeter_acceleration" == opt_key || "external_perimeter_acceleration" == opt_key
-        || "overhangs_speed" == opt_key || "ironing_speed" == opt_key){
+    } else if("default_acceleration" == opt_key || "first_layer_acceleration" == opt_key 
+        || "perimeter_acceleration" == opt_key || "external_perimeter_acceleration" == opt_key 
+        || "infill_acceleration" == opt_key || "solid_infill_acceleration" == opt_key || "top_solid_infill_acceleration" == opt_key 
+        || "bridge_acceleration" == opt_key || "bridge_acceleration_internal"  == opt_key || "overhangs_acceleration" == opt_key 
+        ||  "support_material_acceleration" == opt_key ||   "support_material_interface_acceleration" == opt_key
+        || "gap_fill_acceleration" == opt_key || "thin_walls_acceleration" == opt_key
+        || "ironing_acceleration" == opt_key
+        || "travel_acceleration" == opt_key
+        || "overhangs_speed" == opt_key || "ironing_speed" == opt_key)
+    {
         // remove '%'
         if (value.find("%") != std::string::npos) {
             value = std::to_string(all_conf.get_computed_value(opt_key));

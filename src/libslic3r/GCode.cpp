@@ -3968,6 +3968,7 @@ std::string GCode::_before_extrude(const ExtrusionPath &path, const std::string 
                     acceleration = std::min(max_acceleration, m_config.ironing_acceleration.get_abs_value(acceleration));
                 break;
             case erSupportMaterial:
+            case erSkirt:
                 if (m_config.support_material_acceleration.value >= 0)
                     acceleration = std::min(max_acceleration, m_config.support_material_acceleration.get_abs_value(acceleration));
                 break;
@@ -3995,7 +3996,6 @@ std::string GCode::_before_extrude(const ExtrusionPath &path, const std::string 
                 if (m_config.thin_walls_acceleration.value >= 0)
                     acceleration = std::min(max_acceleration, m_config.thin_walls_acceleration.get_abs_value(acceleration));
                 break;
-            case erSkirt:
             case erWipeTower:
             case erMilling:
             case erCustom:

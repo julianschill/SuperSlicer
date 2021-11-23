@@ -3942,10 +3942,6 @@ std::string GCode::_before_extrude(const ExtrusionPath &path, const std::string 
         max_acceleration = m_config.machine_max_acceleration_extruding.get_at(0);
     double travel_acceleration = get_travel_acceleration(m_config);
     if(acceleration > 0){
-
-        if (m_config.travel_acceleration.value > 0)
-            travel_acceleration = m_config.travel_acceleration.get_abs_value(acceleration);
-
         switch (path.role()){
             case erPerimeter:
                 if (m_config.perimeter_acceleration.value >= 0)

@@ -3944,59 +3944,75 @@ std::string GCode::_before_extrude(const ExtrusionPath &path, const std::string 
     if(acceleration > 0){
         switch (path.role()){
             case erPerimeter:
-                if (m_config.perimeter_acceleration.value >= 0)
-                    acceleration = std::min(max_acceleration, m_config.perimeter_acceleration.get_abs_value(acceleration));
+            perimeter:
+                if (m_config.perimeter_acceleration.value > 0)
+                    acceleration = m_config.get_computed_value("perimeter_acceleration");
                 break;
             case erExternalPerimeter:
-                if (m_config.external_perimeter_acceleration.value >= 0)
-                    acceleration = std::min(max_acceleration, m_config.external_perimeter_acceleration.get_abs_value(acceleration));
+            externalPerimeter:
+                if (m_config.external_perimeter_acceleration.value > 0) 
+                    acceleration = m_config.get_computed_value("external_perimeter_acceleration");
+                else goto perimeter;
                 break;
             case erInternalInfill:
-                if (m_config.infill_acceleration.value >= 0)
-                    acceleration = std::min(max_acceleration, m_config.infill_acceleration.get_abs_value(acceleration));
+            internalInfill:
+                if (m_config.infill_acceleration.value > 0) 
+                    acceleration = m_config.get_computed_value("infill_acceleration");
                 break;
             case erSolidInfill:
-                if (m_config.solid_infill_acceleration.value >= 0)
-                    acceleration = std::min(max_acceleration, m_config.solid_infill_acceleration.get_abs_value(acceleration));
+            solidInfill:
+                if (m_config.solid_infill_acceleration.value > 0) 
+                    acceleration = m_config.get_computed_value("solid_infill_acceleration");
+                else goto internalInfill;    
                 break;
             case erTopSolidInfill:
-                if (m_config.top_solid_infill_acceleration.value >= 0)
-                    acceleration = std::min(max_acceleration, m_config.top_solid_infill_acceleration.get_abs_value(acceleration));
+            topSolidInfill:
+                if (m_config.top_solid_infill_acceleration.value > 0)
+                    acceleration = m_config.get_computed_value("top_solid_infill_acceleration");
+                else goto solidInfill;
                 break;
             case erIroning:
-                if (m_config.ironing_acceleration.value >= 0)
-                    acceleration = std::min(max_acceleration, m_config.ironing_acceleration.get_abs_value(acceleration));
+                if (m_config.ironing_acceleration.value > 0)
+                    acceleration = m_config.get_computed_value("ironing_acceleration");
+                else goto topSolidInfill;
                 break;
             case erSupportMaterial:
             case erSkirt:
-                if (m_config.support_material_acceleration.value >= 0)
-                    acceleration = std::min(max_acceleration, m_config.support_material_acceleration.get_abs_value(acceleration));
+            case erWipeTower:
+            supportMaterial:
+                if (m_config.support_material_acceleration.value > 0)
+                    acceleration = m_config.get_computed_value("support_material_acceleration");
                 break;
             case erSupportMaterialInterface:
-                if (m_config.support_material_interface_acceleration.value >= 0)
-                    acceleration = std::min(max_acceleration, m_config.support_material_interface_acceleration.get_abs_value(acceleration));
+                if (m_config.support_material_interface_acceleration.value > 0) 
+                    acceleration = m_config.get_computed_value("support_material_interface_acceleration");
+                else goto supportMaterial;
                 break;
             case erBridgeInfill:
-                if (m_config.bridge_acceleration.value >= 0)
-                    acceleration = std::min(max_acceleration, m_config.bridge_acceleration.get_abs_value(acceleration));
+            bridgeInfill:
+                if (m_config.bridge_acceleration.value > 0)
+                    acceleration = m_config.get_computed_value("bridge_acceleration");
                 break;
             case erInternalBridgeInfill:
-                if (m_config.bridge_acceleration_internal.value >= 0)
-                    acceleration = std::min(max_acceleration, m_config.bridge_acceleration_internal.get_abs_value(acceleration));
+                if (m_config.bridge_acceleration_internal.value > 0) 
+                    acceleration = m_config.get_computed_value("bridge_acceleration_internal");
+                else goto bridgeInfill;
                 break;
             case erOverhangPerimeter:
-                if (m_config.overhangs_acceleration.value >= 0)
-                    acceleration = std::min(max_acceleration, m_config.overhangs_acceleration.get_abs_value(acceleration));
+                if (m_config.overhangs_acceleration.value > 0)
+                    acceleration = m_config.get_computed_value("overhangs_acceleration");
+                else goto bridgeInfill;
                 break;
             case erGapFill:
-                if (m_config.gap_fill_acceleration.value >= 0)
-                    acceleration = std::min(max_acceleration, m_config.gap_fill_acceleration.get_abs_value(acceleration));
+                if (m_config.gap_fill_acceleration.value > 0)
+                    acceleration = m_config.get_computed_value("gap_fill_acceleration");
+                else goto internalInfill;
                 break;
             case erThinWall:
-                if (m_config.thin_walls_acceleration.value >= 0)
-                    acceleration = std::min(max_acceleration, m_config.thin_walls_acceleration.get_abs_value(acceleration));
+                if (m_config.thin_walls_acceleration.value > 0)
+                    acceleration = m_config.get_computed_value("thin_walls_acceleration");
+                else goto externalPerimeter;
                 break;
-            case erWipeTower:
             case erMilling:
             case erCustom:
             case erMixed:
@@ -4007,8 +4023,11 @@ std::string GCode::_before_extrude(const ExtrusionPath &path, const std::string 
         }
 
         if (this->on_first_layer() && m_config.first_layer_acceleration.value > 0) {
-            acceleration = std::min(max_acceleration, std::min(acceleration, m_config.first_layer_acceleration.get_abs_value(acceleration)));
+            acceleration = std::min(acceleration, m_config.first_layer_acceleration.get_abs_value(acceleration));
         }
+
+        acceleration = std::min(max_acceleration, acceleration);
+
     }
         
     if (m_config.travel_deceleration_use_target){
@@ -4017,7 +4036,7 @@ std::string GCode::_before_extrude(const ExtrusionPath &path, const std::string 
                 // go to first point of extrusion path (stop at midpoint to let us set the decel speed)
                 if (!m_last_pos_defined || m_last_pos != path.first_point()) {
                      Polyline polyline = this->travel_to(gcode, path.first_point(), path.role());
-                     this->write_travel_to(gcode, polyline, "move to first " + description + " point (" + std::to_string(acceleration) +" == "+ std::to_string(travel_acceleration)+")");
+                     this->write_travel_to(gcode, polyline, "move to first " + description + " point (acceleration:" + std::to_string(acceleration) +" travel acceleration:"+ std::to_string(travel_acceleration)+")");
                 }
             } else {
                 // go to midpoint to let us set the decel speed)

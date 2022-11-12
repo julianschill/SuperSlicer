@@ -3856,11 +3856,11 @@ std::string GCode::extrude_loop(const ExtrusionLoop &original_loop, const std::s
     const bool is_full_loop_ccw = loop_to_seam.polygon().is_counter_clockwise();
     //after that point, loop_to_seam can be modified by 'paths', so don't use it anymore
 #if _DEBUG
-    for (auto it = std::next(loop.paths.begin()); it != loop.paths.end(); ++it) {
+    for (auto it = std::next(loop_to_seam.paths.begin()); it != loop_to_seam.paths.end(); ++it) {
         assert(it->polyline.points.size() >= 2);
         assert(std::prev(it)->polyline.last_point() == it->polyline.first_point());
     }
-    assert(loop.paths.front().first_point() == loop.paths.back().last_point());
+    assert(loop_to_seam.paths.front().first_point() == loop_to_seam.paths.back().last_point());
 #endif
     // clip the path to avoid the extruder to get exactly on the first point of the loop;
     // if polyline was shorter than the clipping distance we'd get a null polyline, so
@@ -5260,7 +5260,10 @@ Polyline GCode::travel_to(std::string &gcode, const Point &point, ExtrusionRole 
         }
 
         Point last_post_before_retract = this->last_pos();
-        gcode += this->retract();
+
+        bool no_lift_on_retract = travel.length() <= scale_(EXTRUDER_CONFIG_WITH_DEFAULT(retract_lift_before_travel, 0));
+        gcode += this->retract(false, no_lift_on_retract);
+
         // When "Wipe while retracting" is enabled, then extruder moves to another position, and travel from this position can cross perimeters.
         bool updated_first_pos = false;
         if (last_post_before_retract != this->last_pos() && can_avoid_cross_peri) {
@@ -5432,7 +5435,7 @@ bool GCode::can_cross_perimeter(const Polyline& travel, bool offset)
     return true;
 }
 
-std::string GCode::retract(bool toolchange)
+std::string GCode::retract(bool toolchange, bool inhibit_lift)
 {
     std::string gcode;
 
@@ -5470,7 +5473,7 @@ std::string GCode::retract(bool toolchange)
         else
             need_lift = true;
     }
-    if (need_lift)
+    if (need_lift && !inhibit_lift)
         gcode += m_writer.lift(this->m_layer_index);
 
     return gcode;

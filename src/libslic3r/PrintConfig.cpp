@@ -4246,6 +4246,16 @@ void PrintConfigDef::init_fff_params()
     def->is_vector_extruder = true;
     def->set_default_value(new ConfigOptionFloats { 2. });
 
+    def = this->add("retract_lift_before_travel", coFloats);
+    def->label = L("Minimum travel after z lift");
+    def->category = OptionCategory::extruders;
+    def->tooltip = L("Z lift is not triggered when travel moves are shorter than this length.");
+    def->sidetext = L("mm");
+    def->mode = comAdvancedE | comPrusa;
+    def->min = 0;
+    def->is_vector_extruder = true;
+    def->set_default_value(new ConfigOptionFloats { 2. });
+
     def = this->add("retract_before_wipe", coPercents);
     def->label = L("Retract amount before wipe");
     def->category = OptionCategory::extruders;
@@ -6136,6 +6146,7 @@ void PrintConfigDef::init_extruder_option_keys()
         "retract_lift_above",
         "retract_lift_below",
         "retract_lift_first_layer",
+        "retract_lift_before_travel",
         "retract_lift_top",
         "retract_restart_extra",
         "retract_restart_extra_toolchange",
@@ -7540,6 +7551,7 @@ std::unordered_set<std::string> prusa_export_to_remove_keys = {
 "remaining_times_type",
 "retract_lift_first_layer",
 "retract_lift_top",
+"retract_lift_before_travel",
 "seam_angle_cost",
 "seam_gap",
 "seam_travel_cost",

@@ -22,6 +22,7 @@ group:Retraction
 		setting:idx:retract_lift_first_layer
 		setting:idx:retract_lift_top
 	end_line
+	setting:idx:retract_lift_before_travel
 	line:Retraction Speed
 		setting:idx:retract_speed
 		setting:idx:label$Deretraction:deretract_speed

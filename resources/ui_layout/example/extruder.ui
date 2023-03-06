@@ -21,6 +21,7 @@ group:Retraction
 	line:Lift z enforcement
 		setting:idx:retract_lift_first_layer
 		setting:idx:retract_lift_top
+		setting:idx:retract_lift_before_travel
 	end_line
 	line:Retraction Speed
 		setting:idx:retract_speed

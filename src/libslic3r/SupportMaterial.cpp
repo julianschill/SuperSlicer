@@ -386,7 +386,7 @@ PrintObjectSupportMaterial::PrintObjectSupportMaterial(const PrintObject *object
     coordf_t bridge_flow_ratio = 0;
     for (size_t region_id = 0; region_id < object->num_printing_regions(); ++ region_id) {
         const PrintRegion &region = object->printing_region(region_id);
-        external_perimeter_width = std::max(external_perimeter_width, coordf_t(region.flow(*object, frExternalPerimeter, slicing_params->layer_height).width()));
+        external_perimeter_width = std::max(external_perimeter_width, coordf_t(region.flow(*object, frExternalPerimeter, slicing_params->layer_height, 0).width()));
         bridge_flow_ratio += region.config().bridge_flow_ratio.get_abs_value(1.);
     }
     m_support_params.gap_xy = m_object_config->support_material_xy_spacing.get_abs_value(external_perimeter_width);
@@ -4070,7 +4070,7 @@ void modulate_extrusion_by_overlapping_layers(
             }
             if (path == nullptr) {
                 // Allocate a new path.
-                multipath.paths.push_back(ExtrusionPath(extrusion_role, frag.mm3_per_mm, frag.width, frag.height));
+                multipath.paths.push_back(ExtrusionPath(extrusion_role, frag.mm3_per_mm, frag.width, frag.height, multipath.can_reverse()));
                 path = &multipath.paths.back();
             }
             // The Clipper library may flip the order of the clipped polylines arbitrarily.

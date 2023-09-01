@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <numeric>
 #include <utility>
-#include <boost/unordered_map.hpp>
 #include <stdexcept>
 #include <boost/format.hpp>
 #include <boost/log/trivial.hpp>
@@ -61,7 +60,7 @@ using Config::Snapshot;
 using Config::SnapshotDB;
 
 
-static const boost::unordered_map<PrinterTechnology, std::string> tech_to_string{ {
+static const std::unordered_map<PrinterTechnology, std::string> tech_to_string{ {
     { PrinterTechnology::ptFFF, "FFF" },
     { PrinterTechnology::ptSLA, "SLA" },
     { PrinterTechnology::ptSLS, "SLS" },
@@ -1559,6 +1558,10 @@ void PageDiameters::apply_custom_config(DynamicPrintConfig &config)
     config.option("infill_extrusion_width")->set_phony(true);
     config.option("solid_infill_extrusion_width")->set_phony(true);
     config.option("top_infill_extrusion_width")->set_phony(true);
+    config.set_key_value("perimeter_extrusion_change_odd_layers", new ConfigOptionFloat(0));
+    config.set_key_value("external_perimeter_extrusion_change_odd_layers", new ConfigOptionFloat(0));
+    config.set_key_value("infill_extrusion_change_odd_layers", new ConfigOptionFloat(0));
+    config.set_key_value("solid_infill_extrusion_change_odd_layers", new ConfigOptionFloat(0));
     config.update_phony({});
 }
 

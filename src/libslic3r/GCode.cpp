@@ -1405,16 +1405,16 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
     const double       first_layer_height   = print.get_first_layer_height();
     for (size_t region_id = 0; region_id < print.num_print_regions(); ++ region_id) {
         const PrintRegion &region = print.get_print_region(region_id);
-        file.write_format("; external perimeters extrusion width = %.2fmm\n", region.flow(*first_object, frExternalPerimeter, layer_height).width());
-        file.write_format("; perimeters extrusion width = %.2fmm\n",          region.flow(*first_object, frPerimeter,         layer_height).width());
-        file.write_format("; infill extrusion width = %.2fmm\n",              region.flow(*first_object, frInfill,            layer_height).width());
-        file.write_format("; solid infill extrusion width = %.2fmm\n",        region.flow(*first_object, frSolidInfill,       layer_height).width());
-        file.write_format("; top infill extrusion width = %.2fmm\n",          region.flow(*first_object, frTopSolidInfill,    layer_height).width());
+        file.write_format("; external perimeters extrusion width = %.2fmm\n", region.flow(*first_object, frExternalPerimeter, layer_height, 0).width());
+        file.write_format("; perimeters extrusion width = %.2fmm\n",          region.flow(*first_object, frPerimeter,         layer_height, 0).width());
+        file.write_format("; infill extrusion width = %.2fmm\n",              region.flow(*first_object, frInfill,            layer_height, 0).width());
+        file.write_format("; solid infill extrusion width = %.2fmm\n",        region.flow(*first_object, frSolidInfill,       layer_height, 0).width());
+        file.write_format("; top infill extrusion width = %.2fmm\n",          region.flow(*first_object, frTopSolidInfill,    layer_height, 0).width());
 //TODO add others
         if (print.has_support_material())
             file.write_format("; support material extrusion width = %.2fmm\n", support_material_flow(first_object).width());
         if (first_object->config().first_layer_extrusion_width.value > 0)
-            file.write_format("; first layer extrusion width = %.2fmm\n",   region.flow(*first_object, frPerimeter, first_layer_height, true).width());
+            file.write_format("; first layer extrusion width = %.2fmm\n",   region.flow(*first_object, frPerimeter, first_layer_height, 0).width());
         file.write_format("\n");
     }
     BoundingBoxf3 global_bounding_box;
@@ -1806,12 +1806,12 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
         this->_print_first_layer_bed_temperature(file, print, start_all_gcode, initial_extruder_id, true);
 
     // Do all objects for each layer.
-    if (initial_extruder_id != (uint16_t)-1)
+    if (initial_extruder_id != (uint16_t)-1) {
         if (print.config().complete_objects.value) {
             size_t finished_objects = 0;
-            const PrintObject *prev_object = (*print_object_instance_sequential_active)->print_object;
-            for (; print_object_instance_sequential_active != print_object_instances_ordering.end(); ++ print_object_instance_sequential_active) {
-                const PrintObject &object = *(*print_object_instance_sequential_active)->print_object;
+            const PrintObject* prev_object = (*print_object_instance_sequential_active)->print_object;
+            for (; print_object_instance_sequential_active != print_object_instances_ordering.end(); ++print_object_instance_sequential_active) {
+                const PrintObject& object = *(*print_object_instance_sequential_active)->print_object;
                 if (&object != prev_object || tool_ordering.first_extruder() != final_extruder_id) {
                     tool_ordering = ToolOrdering(object, final_extruder_id);
                     uint16_t new_extruder_id = tool_ordering.first_extruder();
@@ -1819,7 +1819,7 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
                         // Skip this object.
                         continue;
                     initial_extruder_id = new_extruder_id;
-                    final_extruder_id   = tool_ordering.last_extruder();
+                    final_extruder_id = tool_ordering.last_extruder();
                     assert(final_extruder_id != (uint16_t)-1);
                 }
                 print.throw_if_canceled();
@@ -1860,7 +1860,7 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
                 // Generate G-code, run the filters (vase mode, cooling buffer), run the G-code analyser
                 // and export G-code into file.
                 this->process_layers(print, print.m_print_statistics, tool_ordering, collect_layers_to_print(object), *print_object_instance_sequential_active - object.instances().data(), file);
-                ++ finished_objects;
+                ++finished_objects;
                 // Flag indicating whether the nozzle temperature changes from 1st to 2nd layer were performed.
                 // Reset it when starting another object from 1st layer.
                 m_second_layer_things_done = false;
@@ -1868,60 +1868,120 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
             }
             set_extra_lift(m_last_layer_z, prev_object->layers().back()->id(), print.config(), m_writer, initial_extruder_id /* osef, it's only for the lift_min */);
         } else {
-            // Sort layers by Z.
-            // All extrusion moves with the same top layer height are extruded uninterrupted.
-            std::vector<std::pair<coordf_t, std::vector<LayerToPrint>>> layers_to_print = collect_layers_to_print(print);
-            // Prusa Multi-Material wipe tower.
-            if (has_wipe_tower && ! layers_to_print.empty()) {
-                m_wipe_tower.reset(new WipeTowerIntegration(print.config(), *print.wipe_tower_data().priming.get(), print.wipe_tower_data().tool_changes, *print.wipe_tower_data().final_purge.get()));
-                file.write(m_writer.travel_to_z(first_layer_height + m_config.z_offset.value, "Move to the first layer height"));
-                if (print.config().single_extruder_multi_material_priming) {
-                    file.write(m_wipe_tower->prime(*this));
-                    // Verify, whether the print overaps the priming extrusions.
-                    BoundingBoxf bbox_print(get_print_extrusions_extents(print));
-                    coordf_t twolayers_printz = ((layers_to_print.size() == 1) ? layers_to_print.front() : layers_to_print[1]).first + EPSILON;
-                    for (const PrintObject *print_object : print.objects())
-                        bbox_print.merge(get_print_object_extrusions_extents(*print_object, twolayers_printz));
-                    bbox_print.merge(get_wipe_tower_extrusions_extents(print, twolayers_printz));
-                    BoundingBoxf bbox_prime(get_wipe_tower_priming_extrusions_extents(print));
-                    bbox_prime.offset(0.5f);
-                    bool overlap = bbox_prime.overlap(bbox_print);
+            /////////////////////////////////////////////// begin parallel_objects_step
+            if (print.config().parallel_objects_step > 0 && !has_wipe_tower) {
 
-                    if (print.config().gcode_flavor.value == gcfMarlinLegacy || print.config().gcode_flavor.value == gcfMarlinFirmware) {
-                        file.write(this->retract());
-                        file.write("M300 S800 P500\n"); // Beep for 500ms, tone 800Hz.
-                        if (overlap) {
-                            // Wait for the user to remove the priming extrusions.
-                            file.write("M1 Remove priming towers and click button.\n");
-                        } else {
-                            // Just wait for a bit to let the user check, that the priming succeeded.
-                            //TODO Add a message explaining what the printer is waiting for. This needs a firmware fix.
-                            file.write("M1 S10\n");
-                        }
-                    } else {
-                        // This is not Marlin, M1 command is probably not supported.
-                        // (See https://github.com/prusa3d/PrusaSlicer/issues/5441.)
-                        if (overlap) {
-                            print.active_step_add_warning(PrintStateBase::WarningLevel::CRITICAL,
-                                _(L("Your print is very close to the priming regions. "
-                                  "Make sure there is no collision.")));
-                        } else {
-                            // Just continue printing, no action necessary.
+                float range = print.config().parallel_objects_step + EPSILON;
+                print_object_instances_ordering = sort_object_instances_by_model_order(print);
+                std::vector<const PrintInstance*>::const_iterator prev_object = print_object_instances_ordering.begin();
+
+                bool first_layer = true;
+            proceed_layers:
+
+                for (coordf_t Rstart = 0, Rend = range;; Rstart += range, Rend += range) {
+                    bool is_layers = false;
+                    print_object_instance_sequential_active = print_object_instances_ordering.begin();
+
+                    for (size_t i = 0; i < print.objects().size(); ++i, ++print_object_instance_sequential_active) {
+                        std::vector<LayerToPrint> object_layers = collect_layers_to_print(*print.objects()[i]);
+                        std::vector<std::pair<coordf_t, std::vector<LayerToPrint>>> layers_to_print_range;
+
+                        int layer_num = 0;
+                        for (const LayerToPrint& ltp : object_layers) {
+                            layer_num++;
+                            if (!first_layer && layer_num == 1)
+                                continue;
+
+                            if (ltp.print_z() >= Rstart && ltp.print_z() < Rend) {
+                                std::pair<coordf_t, std::vector<LayerToPrint>> merged;
+                                merged.first = ltp.print_z();
+                                merged.second.emplace_back(ltp);
+                                layers_to_print_range.emplace_back(merged);
+                                if (first_layer)
+                                    break;
+                            }
                         }
 
+                        if (!layers_to_print_range.empty())
+                        {
+                            if (print_object_instance_sequential_active != prev_object) {
+                                this->set_origin(unscale((*print_object_instance_sequential_active)->shift));
+                                std::string gcode;
+                                //go to origin of the next object (it's 0,0 because we shifted the origin to it)
+                                Polyline polyline = this->travel_to(gcode, Point(0, 0), erNone);
+                                this->write_travel_to(gcode, polyline, "move to origin position for next object");
+                                file.write(gcode);
+                            }
+                            this->process_layers(print, print.m_print_statistics, tool_ordering, print_object_instances_ordering, layers_to_print_range, file);
+                            prev_object = print_object_instance_sequential_active;
+                            is_layers = true;
+                        }
+                    }
+                    if (first_layer) {
+                        first_layer = false;
+                        goto proceed_layers;
+                    }
+                    if (!is_layers) {
+                        break;
                     }
                 }
-                print.throw_if_canceled();
-            }
-            // Process all layers of all objects (non-sequential mode) with a parallel pipeline:
-            // Generate G-code, run the filters (vase mode, cooling buffer), run the G-code analyser
-            // and export G-code into file.
-            this->process_layers(print, print.m_print_statistics, tool_ordering, print_object_instances_ordering, layers_to_print, file);
-            if (m_wipe_tower)
-                // Purge the extruder, pull out the active filament.
-                file.write(m_wipe_tower->finalize(*this));
-        }
+                /////////////////////////////////////////////// end parallel_objects_step
+            } else {
+                // Sort layers by Z.
+                // All extrusion moves with the same top layer height are extruded uninterrupted.
+                std::vector<std::pair<coordf_t, std::vector<LayerToPrint>>> layers_to_print = collect_layers_to_print(print);
+                // Prusa Multi-Material wipe tower.
+                if (has_wipe_tower && !layers_to_print.empty()) {
+                    m_wipe_tower.reset(new WipeTowerIntegration(print.config(), *print.wipe_tower_data().priming.get(), print.wipe_tower_data().tool_changes, *print.wipe_tower_data().final_purge.get()));
+                    file.write(m_writer.travel_to_z(first_layer_height + m_config.z_offset.value, "Move to the first layer height"));
+                    if (print.config().single_extruder_multi_material_priming) {
+                        file.write(m_wipe_tower->prime(*this));
+                        // Verify, whether the print overaps the priming extrusions.
+                        BoundingBoxf bbox_print(get_print_extrusions_extents(print));
+                        coordf_t twolayers_printz = ((layers_to_print.size() == 1) ? layers_to_print.front() : layers_to_print[1]).first + EPSILON;
+                        for (const PrintObject* print_object : print.objects())
+                            bbox_print.merge(get_print_object_extrusions_extents(*print_object, twolayers_printz));
+                        bbox_print.merge(get_wipe_tower_extrusions_extents(print, twolayers_printz));
+                        BoundingBoxf bbox_prime(get_wipe_tower_priming_extrusions_extents(print));
+                        bbox_prime.offset(0.5f);
+                        bool overlap = bbox_prime.overlap(bbox_print);
 
+                        if (print.config().gcode_flavor.value == gcfMarlinLegacy || print.config().gcode_flavor.value == gcfMarlinFirmware) {
+                            file.write(this->retract());
+                            file.write("M300 S800 P500\n"); // Beep for 500ms, tone 800Hz.
+                            if (overlap) {
+                                // Wait for the user to remove the priming extrusions.
+                                file.write("M1 Remove priming towers and click button.\n");
+                            } else {
+                                // Just wait for a bit to let the user check, that the priming succeeded.
+                                //TODO Add a message explaining what the printer is waiting for. This needs a firmware fix.
+                                file.write("M1 S10\n");
+                            }
+                        } else {
+                            // This is not Marlin, M1 command is probably not supported.
+                            // (See https://github.com/prusa3d/PrusaSlicer/issues/5441.)
+                            if (overlap) {
+                                print.active_step_add_warning(PrintStateBase::WarningLevel::CRITICAL,
+                                    _(L("Your print is very close to the priming regions. "
+                                        "Make sure there is no collision.")));
+                            } else {
+                                // Just continue printing, no action necessary.
+                            }
+
+                        }
+                    }
+                    print.throw_if_canceled();
+                }
+                // Process all layers of all objects (non-sequential mode) with a parallel pipeline:
+                // Generate G-code, run the filters (vase mode, cooling buffer), run the G-code analyser
+                // and export G-code into file.
+                this->process_layers(print, print.m_print_statistics, tool_ordering, print_object_instances_ordering, layers_to_print, file);
+                if (m_wipe_tower)
+                    // Purge the extruder, pull out the active filament.
+                    file.write(m_wipe_tower->finalize(*this));
+            }
+        }
+    }
     // Write end commands to file.
     file.write(this->retract());
     //if needed, write the gcode_label_objects_end
@@ -3556,6 +3616,12 @@ std::string GCode::extrude_loop_vase(const ExtrusionLoop &original_loop, const s
     ExtrusionPaths &paths = loop_to_seam.paths;
     if (false && m_enable_loop_clipping && m_writer.tool_is_extruder()) {
         coordf_t clip_length = scale_(m_config.seam_gap.get_abs_value(m_writer.tool()->id(), EXTRUDER_CONFIG_WITH_DEFAULT(nozzle_diameter, 0)));
+        if (original_loop.role() == erExternalPerimeter) {
+            coordf_t clip_length_external = scale_(m_config.seam_gap_external.get_abs_value(m_writer.tool()->id(), unscaled(clip_length)));
+            if (clip_length_external > 0) {
+                clip_length = clip_length_external;
+            }
+        }
         coordf_t min_clip_length = scale_(EXTRUDER_CONFIG_WITH_DEFAULT(nozzle_diameter, 0)) * 0.15;
 
         // get paths
@@ -3978,7 +4044,7 @@ void GCode::seam_notch(const ExtrusionLoop& original_loop,
         //abord if the two vec are too different
         double prod_scal = vec_start.dot(vec_end);
         if (prod_scal < 0.2) {
-            std::cout << "notch abord: too different sides\n";
+            BOOST_LOG_TRIVIAL(warning) << "notch abord: too different sides\n";
             return;
         }
         //use a vec that is the mean between the two.
@@ -3996,41 +4062,21 @@ void GCode::seam_notch(const ExtrusionLoop& original_loop,
         } else {
             check_angle = end_point.ccw_angle(prev_point, start_point);
             if ((is_hole_loop ? -check_angle : check_angle) > this->m_config.seam_notch_angle.value * PI / 180.) {
-                std::cout << "notch abord: too big angle\n";
+                BOOST_LOG_TRIVIAL(debug) << "notch abord: too big angle\n";
                 return;
             }
             check_angle = start_point.ccw_angle(end_point, next_point);
         }
         assert(end_point != start_point);
         assert(end_point != next_point);
-        std::cout << "angle is " << check_angle << "\n";
         if ((is_hole_loop ? -check_angle : check_angle) > this->m_config.seam_notch_angle.value * PI / 180.) {
-            std::cout << "notch abord: too big angle\n";
+            BOOST_LOG_TRIVIAL(debug) << "notch abord: too big angle\n";
             return;
         }
-        std::cout << "angle is okay! " << check_angle<< " ? "<< (this->m_config.seam_notch_angle.value * PI / 180.) << "\n";
-        //std::cout << "points:" << building_paths.back().polyline.points.size() << "\n";
-        //std::cout << "angle between " << unscaled(building_paths.back().polyline.points[2]).x() << ":" << unscaled(building_paths.back().polyline.points[2]).y() << " -> "
-        //    << unscaled(building_paths.back().polyline.points[0]).x() << ":" << unscaled(building_paths.back().polyline.points[0]).y() << " -> "
-        //    << unscaled(building_paths.back().polyline.points[1]).x() << ":" << unscaled(building_paths.back().polyline.points[1]).y() << " = "
-        //    << building_paths.back().polyline.points[0].ccw_angle(building_paths.back().polyline.points[2], building_paths.back().polyline.points[1]) << "rad = "
-        //    << int(building_paths.back().polyline.points[0].ccw_angle(building_paths.back().polyline.points[2], building_paths.back().polyline.points[1]) * 180 / PI) << "°\n";
-        //std::cout << "angle between " << unscaled(building_paths.back().polyline.points[0]).x() << ":" << unscaled(building_paths.back().polyline.points[0]).y() << " -> "
-        //    << unscaled(building_paths.back().polyline.points[1]).x() << ":" << unscaled(building_paths.back().polyline.points[1]).y() << " -> "
-        //    << unscaled(building_paths.back().polyline.points[2]).x() << ":" << unscaled(building_paths.back().polyline.points[2]).y() << " = "
-        //    << building_paths.back().polyline.points[1].ccw_angle(building_paths.back().polyline.points[0], building_paths.back().polyline.points[2]) << "rad = "
-        //    << int(building_paths.back().polyline.points[1].ccw_angle(building_paths.back().polyline.points[0], building_paths.back().polyline.points[2]) * 180 / PI) << "°\n";
-        //std::cout << "angle between " << unscaled(building_paths.back().polyline.points[1]).x() << ":" << unscaled(building_paths.back().polyline.points[1]).y() << " -> "
-        //    << unscaled(building_paths.back().polyline.points[2]).x() << ":" << unscaled(building_paths.back().polyline.points[2]).y() << " -> "
-        //    << unscaled(building_paths.back().polyline.points[0]).x() << ":" << unscaled(building_paths.back().polyline.points[0]).y() << " = "
-        //    << building_paths.back().polyline.points[2].ccw_angle(building_paths.back().polyline.points[1], building_paths.back().polyline.points[0]) << "rad = "
-        //    << int(building_paths.back().polyline.points[2].ccw_angle(building_paths.back().polyline.points[1], building_paths.back().polyline.points[0]) * 180 / PI) << "°\n";
-
         //check if the point is inside
         bool is_inside = original_loop.polygon().contains(moved_start) && original_loop.polygon().contains(moved_end);
-        std::cout << "is_inside? " << is_inside << "\n";
         if ( (is_hole_loop && is_inside) || (!is_hole_loop && !is_inside) ) {
-            std::cout << "notch abord: not inside\n";
+            BOOST_LOG_TRIVIAL(debug) << "notch abord: not inside\n";
             return;
         }
         // set new start point
@@ -4038,7 +4084,6 @@ void GCode::seam_notch(const ExtrusionLoop& original_loop,
         Point control_start_point = start_point;
         Line start_line(start_point, next_point);
         if (start_line.length() > notch_value * 2) {
-            std::cout << "start is in the first segment\n";
             control_start_point = start_line.point_at(notch_value);
             //TODO: here, the arc is invalidaded, please change that to adapt the arc instead of removing all.
             building_paths.front().polyline.set_points().front() = start_line.point_at(notch_value * 2);
@@ -4053,7 +4098,6 @@ void GCode::seam_notch(const ExtrusionLoop& original_loop,
             if (push_way_ctrl_dist < 0) {
                 control_start_point = start_line.point_at(notch_value);
             }
-            std::cout << "start is not in the first segment\n";
             if (building_paths.front().polyline.size() > 2) {
                 building_paths.front().polyline.clip_first_point();
             }
@@ -4068,7 +4112,6 @@ void GCode::seam_notch(const ExtrusionLoop& original_loop,
                     }
                 }
                 if (next_line.length() > push_way_dist) {
-                    std::cout << "start is in the next segment\n";
                     //TODO: here, the arc is invalidaded, please change that to adapt the arc instead of removing all.
                     building_paths.front().polyline.set_points().front() = next_line.point_at(push_way_dist);
                     if (building_paths.front().polyline.has_arc() && building_paths.front().polyline.get_arc().front().path_type != Slic3r::Geometry::EMovePathType::Linear_move) {
@@ -4077,9 +4120,7 @@ void GCode::seam_notch(const ExtrusionLoop& original_loop,
                     push_way_dist = 0;
                     good_start_point = true;
                 } else {
-                    std::cout << "start is not in the next segment\n";
                     if (std::abs(next_line.a.ccw_angle(start_point, next_line.b) - PI) > PI * 0.4) {
-                        std::cout << " stop start search, angle is " << (next_line.a.ccw_angle(start_point, next_line.b) * 180 / PI) << " => " << (std::abs(next_line.a.ccw_angle(start_point, next_line.b) - PI) * 180 / PI) << " > " << (180 * 0.4) << "\n";
                         // if angle is sharp (not near 180°), stop search
                         break;
                     }
@@ -4106,12 +4147,7 @@ void GCode::seam_notch(const ExtrusionLoop& original_loop,
         Point control_end_point = end_point;
         Line end_line(end_point, prev_point);
         coordf_t length_clipped = 0;
-        static int isazfqsdqs = 0;
-        std::stringstream stri;
-        stri << m_layer_index << "_" << is_hole_loop << "_" << isazfqsdqs++ << "_Nnotch" << ".svg";
-        SVG svg1(stri.str());
         if (end_line.length() > notch_value * 2) {
-            std::cout << "end is in the first segment\n";
             control_end_point = end_line.point_at(notch_value);
             //TODO: here, the arc is invalidaded, please change that to adapt the arc instead of removing all.
             building_paths.back().polyline.set_points().back() = end_line.point_at(notch_value * 2);
@@ -4120,7 +4156,6 @@ void GCode::seam_notch(const ExtrusionLoop& original_loop,
             }
             good_end_point = true;
         } else {
-            std::cout << "end is NOT in the first segment\n";
             // move the other point further away
             double push_way_dist = notch_value * 2;
             double push_way_ctrl_dist = notch_value;
@@ -4131,7 +4166,6 @@ void GCode::seam_notch(const ExtrusionLoop& original_loop,
                 // remove a point until it's enough, then displace it at the right pos
                 while (push_way_dist > 0 && current_end_line.polyline.size() > 1) {
                     Line next_line(current_end_line.polyline.back(), current_end_line.polyline.get_points()[current_end_line.polyline.size() - 2]);
-                    svg1.draw(next_line, "green", scale_d(0.1));
                     //try to get the control point (to create a curve)
                     if (push_way_ctrl_dist > 0) {
                         if (next_line.length() > push_way_ctrl_dist) {
@@ -4143,7 +4177,6 @@ void GCode::seam_notch(const ExtrusionLoop& original_loop,
                     }
                     //try to get the end point
                     if (next_line.length() > push_way_dist) {
-                        std::cout << "end is in the next segment\n";
                         //TODO: here, the arc is invalidaded, please change that to adapt the arc instead of removing all.
                         current_end_line.polyline.set_points().back() = next_line.point_at(push_way_dist);
                         if (current_end_line.polyline.has_arc() && current_end_line.polyline.get_arc().back().path_type != Slic3r::Geometry::EMovePathType::Linear_move) {
@@ -4152,10 +4185,7 @@ void GCode::seam_notch(const ExtrusionLoop& original_loop,
                         push_way_dist = 0;
                         good_end_point = true;
                     } else {
-                        std::cout << "end is not in the next segment\n";
                         if (end_point != next_line.a && std::abs(next_line.a.ccw_angle(end_point, next_line.b) - PI) > PI * 0.4) {
-                            svg1.draw(Polyline{end_point, next_line.a, next_line.b}, "red", scale_d(0.05));
-                            std::cout << " stop end search, angle is " << (next_line.a.ccw_angle(end_point, next_line.b) * 180 / PI) << " => " << (std::abs(next_line.a.ccw_angle(end_point, next_line.b) - PI) * 180 / PI) << " > " << (180 * 0.4) << "\n";
                             //if clipped, full clip -> don't need to do anything.
                             // if angle is sharp (not near 180°), stop search
                             break;
@@ -4178,7 +4208,6 @@ void GCode::seam_notch(const ExtrusionLoop& original_loop,
                 assert(!building_paths.empty());
             } while (push_way_dist > 0 && building_paths.size() > 0 && polyline_removed);
             if (push_way_dist > 0) {
-                std::cout << "end is too short, guess a control point\n";
                 //push as much as possible
                 Line next_line(building_paths.back().last_point(), building_paths.back().polyline.get_points()[building_paths.back().polyline.size() - 2]);
                 //TODO: here, the arc is invalidaded, please change that to adapt the arc instead of removing all.
@@ -4188,12 +4217,9 @@ void GCode::seam_notch(const ExtrusionLoop& original_loop,
                 }
             }
             if (push_way_ctrl_dist > 0) {
-                std::cout << "end is too short, try to advance a bit more\n";
                 control_end_point = Line(end_point, building_paths.back().polyline.back()).midpoint();
             }
         }
-        svg1.Close();
-        std::cout << "good_start_point=" << good_start_point << ", good_end_point=" << good_end_point << "\n";
         auto create_new_extrusion = [](ExtrusionPaths& paths, const ExtrusionPath& model, float ratio, const Point& start, const Point& end) {
             // add notch extrutsions
             paths.emplace_back(model);
@@ -4206,11 +4232,6 @@ void GCode::seam_notch(const ExtrusionLoop& original_loop,
             path.mm3_per_mm = path.mm3_per_mm * ratio;
         };
 
-        static int isazfn = 0;
-        std::stringstream stri1;
-        stri1 <<m_layer_index << "_"<< is_hole_loop<<"_"<<isazfn++ << "_notch" << ".svg";
-        SVG svg(stri1.str());
-        svg.draw(Polyline{ prev_point, end_point, start_point, next_point }, "green", scale_d(0.3));
         //reduce the flow of the notch path, as it's longer than previously
         if (good_start_point) {
             //create a gentle curve
@@ -4220,11 +4241,9 @@ void GCode::seam_notch(const ExtrusionLoop& original_loop,
             create_new_extrusion(notch_extrusion_start, building_paths.front(), 0.25f, moved_start, p1);
             create_new_extrusion(notch_extrusion_start, building_paths.front(), 0.5f, p1, p2);
             create_new_extrusion(notch_extrusion_start, building_paths.front(), 0.75f, p2, building_paths.front().first_point());
-            svg.draw(Polyline{ moved_start, p1, p2, building_paths.front().first_point(), control_start_point, start_point }, "orange", scale_d(0.2));
         } else {
             create_new_extrusion(notch_extrusion_start, building_paths.front(), 0.5f, moved_start, building_paths.front().first_point());
         }
-        std::cout << "length_clipped=" << unscaled(length_clipped) << "\n";
         //reduce the flow of the notch path, as it's longer than previously
         if (good_end_point) {
             //create a gentle curve
@@ -4244,11 +4263,9 @@ void GCode::seam_notch(const ExtrusionLoop& original_loop,
             create_new_extrusion(notch_extrusion_end, building_paths.back(), check_length_clipped(p2)?0.75f:0.f, building_paths.back().last_point(), p2);
             create_new_extrusion(notch_extrusion_end, building_paths.back(), check_length_clipped(p1) ? 0.5f : 0.f, p2, p1);
             create_new_extrusion(notch_extrusion_end, building_paths.back(), 0.f, p1, moved_end);
-            svg.draw(Polyline{ moved_end, p1, p2, building_paths.front().last_point(), control_end_point, end_point }, "red", scale_d(0.2));
         } else {
             create_new_extrusion(notch_extrusion_end, building_paths.back(), 0.5f, building_paths.back().last_point(), moved_end);
         }
-        svg.Close();
     }
 }
 
@@ -4317,8 +4334,19 @@ std::string GCode::extrude_loop(const ExtrusionLoop &original_loop, const std::s
     // if polyline was shorter than the clipping distance we'd get a null polyline, so
     // we discard it in that case
     ExtrusionPaths& building_paths = loop_to_seam.paths;
+    //direction is now set, make the path unreversable
+    for (ExtrusionPath& path : building_paths) {
+        //assert(!path.can_reverse() || !is_perimeter(path.role())); //just ensure the perimeter have their direction enforced.
+        path.set_can_reverse(false);
+    }
     if (m_enable_loop_clipping && m_writer.tool_is_extruder()) {
         coordf_t clip_length = scale_(m_config.seam_gap.get_abs_value(m_writer.tool()->id(), nozzle_diam));
+        if (original_loop.role() == erExternalPerimeter) {
+            coordf_t clip_length_external = scale_(m_config.seam_gap_external.get_abs_value(m_writer.tool()->id(), unscaled(clip_length)));
+            if (clip_length_external > 0) {
+                clip_length = clip_length_external;
+            }
+        }
         coordf_t min_clip_length = scale_(nozzle_diam) * 0.15;
 
         if (clip_length > full_loop_length / 4) {
@@ -4433,21 +4461,25 @@ std::string GCode::extrude_loop(const ExtrusionLoop &original_loop, const std::s
         // use extrude instead of travel_to_xy to trigger the unretract
         ExtrusionPath fake_path_wipe(Polyline{ pt , current_point }, wipe_paths.front());
         fake_path_wipe.mm3_per_mm = 0;
+        assert(!fake_path_wipe.can_reverse());
         gcode += extrude_path(fake_path_wipe, "move inwards before retraction/seam", speed);
     }
     
     //extrusion notch start if any
     for (const ExtrusionPath& path : notch_extrusion_start) {
+        assert(!path.can_reverse());
         gcode += extrude_path(path, description, speed);
     }
     // extrude along the path
     //FIXME: we can have one-point paths in the loop that don't move : it's useless! and can create problems!
-    for (auto path = paths.begin(); path != paths.end(); ++path) {
-        if(path->polyline.size() > 1)
-            gcode += extrude_path(*path, description, speed);
+    for (const ExtrusionPath& path : paths) {
+        assert(!path.can_reverse());
+        if(path.polyline.size() > 1)
+            gcode += extrude_path(path, description, speed);
     }
     //extrusion notch end if any
     for (const ExtrusionPath& path : notch_extrusion_end) {
+        assert(!path.can_reverse());
         gcode += extrude_path(path, description, speed);
     }
 
@@ -4656,15 +4688,29 @@ void GCode::add_wipe_points(const std::vector<THING>& paths) {
 
 std::string GCode::extrude_multi_path(const ExtrusionMultiPath &multipath, const std::string &description, double speed) {
 #if _DEBUG
+    assert(!multipath.empty());
+    assert(!multipath.paths.front().polyline.empty());
     for (auto it = std::next(multipath.paths.begin()); it != multipath.paths.end(); ++it) {
         assert(it->polyline.size() >= 2);
         assert(std::prev(it)->polyline.back() == it->polyline.front());
     }
 #endif
-    // extrude along the path
     std::string gcode;
-    for (const ExtrusionPath &path : multipath.paths) {
-        gcode += extrude_path(path, description, speed);
+    //test if we reverse
+    if (m_last_pos_defined && multipath.can_reverse() 
+        && multipath.first_point().distance_to_square(m_last_pos) > multipath.last_point().distance_to_square(m_last_pos)) {
+        //reverse to get a shorter point (hopefully there is still no feature that choose a point that need no perimeter crossing before).
+        // extrude along the  reversedpath
+        for (size_t idx_path = multipath.paths.size() - 1; idx_path < multipath.paths.size(); --idx_path) {
+            assert(multipath.paths[idx_path].can_reverse());
+            //extrude_path will reverse the path by itself, no need to copy it do to it here.
+            gcode += extrude_path(multipath.paths[idx_path], description, speed);
+        }
+    } else {
+        // extrude along the path
+        for (const ExtrusionPath& path : multipath.paths) {
+            gcode += extrude_path(path, description, speed);
+        }
     }
     add_wipe_points(multipath.paths);
     // reset acceleration
@@ -4716,7 +4762,7 @@ std::string GCode::extrude_entity(const ExtrusionEntity &entity, const std::stri
 }
 
 void GCode::use(const ExtrusionEntityCollection &collection) {
-    if (!collection.can_sort() || collection.role() == erMixed) {
+    if (!collection.can_sort() || collection.role() == erMixed || collection.entities().size() <= 1) {
         for (const ExtrusionEntity* next_entity : collection.entities()) {
             next_entity->visit(*this);
         }
@@ -4731,6 +4777,13 @@ void GCode::use(const ExtrusionEntityCollection &collection) {
 std::string GCode::extrude_path(const ExtrusionPath &path, const std::string &description, double speed_mm_per_sec) {
     std::string gcode;
     ExtrusionPath simplifed_path = path;
+
+    //check if we should reverse it
+    if (m_last_pos_defined && path.can_reverse()
+        && simplifed_path.first_point().distance_to_square(m_last_pos) > simplifed_path.last_point().distance_to_square(m_last_pos)) {
+        simplifed_path.reverse();
+    }
+
     // simplify with gcode_resolution (not used yet). Simplify by jusntion deviation before the g1/sec count, to be able to use that decimation to reduce max_gcode_per_second triggers.
     // But as it can be visible on cylinders, should only be called if a max_gcode_per_second trigger may come.
     //simplifed_path.simplify(m_scaled_gcode_resolution);
@@ -5228,7 +5281,7 @@ double_t GCode::_compute_speed_mm_per_sec(const ExtrusionPath& path, double spee
             double max_ratio = m_config.gap_fill_flow_match_perimeter.get_abs_value(1.);
             if (max_ratio > 0 && m_region) {
                 //compute intended perimeter flow
-                Flow fl = m_region->flow(*m_layer->object(), FlowRole::frPerimeter, m_layer->height, m_layer->id() == 0);
+                Flow fl = m_region->flow(*m_layer->object(), FlowRole::frPerimeter, m_layer->height, m_layer->id());
                 double max_vol_speed = fl.mm3_per_mm() * max_ratio * m_config.get_computed_value("perimeter_speed");
                 double current_vol_speed = path.mm3_per_mm * speed;
                 if (max_vol_speed < current_vol_speed) {
@@ -5823,7 +5876,8 @@ Polyline GCode::travel_to(std::string &gcode, const Point &point, ExtrusionRole 
 
 void GCode::write_travel_to(std::string &gcode, const Polyline& travel, std::string comment)
 {
-    if (travel.size() > 4) {
+    if (travel.size() > 4)
+    {
         //ensure that you won't overload the firmware.
         // travel are  strait lines, but with avoid_crossing_perimeters, there can be many points. Reduce speed instead of deleting points, as it's already optimised as much as possible, even if it can be a bit more => TODO?)
         // we are using a window of 10 moves.
